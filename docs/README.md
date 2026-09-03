@@ -34,6 +34,7 @@ This directory is the canonical documentation set for TheNexus. It is intentiona
 
 - [`art/01-art-direction.md`](art/01-art-direction.md)
 - [`art/02-asset-pipeline-and-ip.md`](art/02-asset-pipeline-and-ip.md)
+- [`../ASSET_PROVENANCE.md`](../ASSET_PROVENANCE.md) — official third-party asset license/provenance register.
 
 ## Quality and platform
 
