@@ -11,6 +11,15 @@ This directory is the canonical documentation set for TheNexus. It is intentiona
 5. [`quality/01-testing-and-quality-bar.md`](quality/01-testing-and-quality-bar.md) — definition of done and verification strategy.
 6. [`../AGENTS.md`](../AGENTS.md) — rules that every coding agent must follow.
 
+## Autonomous agent execution
+
+- [`agents/README.md`](agents/README.md) — execution documentation index.
+- [`agents/zcode-runbook.md`](agents/zcode-runbook.md) — human setup for a long ZCode/GLM-5.3-Flash run.
+- [`agents/zcode-master-prompt.md`](agents/zcode-master-prompt.md) — primary coordinator prompt.
+- [`execution/acceptance-checklist.md`](execution/acceptance-checklist.md) — evidence-based Goal Mode completion contract.
+- [`execution/progress.md`](execution/progress.md) — durable autonomous progress ledger.
+- [`superpowers/plans/2026-09-03-bootstrap-core.md`](superpowers/plans/2026-09-03-bootstrap-core.md) — first detailed implementation plan.
+
 ## Product
 
 - [`product/01-vision-and-principles.md`](product/01-vision-and-principles.md)
