@@ -91,6 +91,7 @@ export { SpatialIndex, type SpatialItem, type SpatialRect } from './core/spatial
 export { PerfMonitor, RingBuffer, percentile, type PerfMark } from './core/perf';
 
 export { WorldRenderer, type RendererOptions, type RendererPerf } from './render/world-renderer';
+export { cssToHex, roomPalette, stationPalette, themeColor } from './render/theme-colors';
 export type {
   CharacterPresentation,
   ShipLayoutView,
