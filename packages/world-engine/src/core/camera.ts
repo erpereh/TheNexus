@@ -1,4 +1,4 @@
-import { gridToScreen, screenToGrid, screenToWorld, worldToScreen } from './iso';
+import { gridToScreen, screenToGrid, screenToWorld } from './iso';
 import type { GridPoint, ScreenPoint, Viewport } from './iso';
 import type { GridRect } from './grid';
 

@@ -32,6 +32,13 @@ describe('cursor adapter specifics', () => {
     expect(result.accepted[0]?.source.provider).toBe('cursor');
   });
 
+  it('declares observation-only capabilities (no control)', () => {
+    expect(CURSOR_ADAPTER_DESCRIPTOR.capabilities.observeSessions).toBe(true);
+    expect(CURSOR_ADAPTER_DESCRIPTOR.capabilities.sendTask).toBe(false);
+    expect(CURSOR_ADAPTER_DESCRIPTOR.capabilities.sendMessage).toBe(false);
+    expect(CURSOR_ADAPTER_DESCRIPTOR.capabilities.cancelTask).toBe(false);
+  });
+
   it('rejects non-ISO timestamps at the schema boundary', () => {
     const adapter = createCursorAdapter();
     const result = adapter.parse({

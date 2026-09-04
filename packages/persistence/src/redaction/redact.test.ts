@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  redactJsonStrings,
-  redactSecrets,
-  type SecretKind,
-} from './redact';
+import { redactJsonStrings, redactSecrets, type SecretKind } from './redact';
 
 /**
  * Secret-like fixtures are intentionally assembled at runtime.
@@ -19,57 +15,31 @@ import {
 const join = (...parts: string[]): string => parts.join('');
 
 const secretFixtures = {
-  openAiProject: (): string =>
-    join('sk', '-proj-', 'abcdefghijklmnopqrstuvwxyz123456'),
+  openAiProject: (): string => join('sk', '-proj-', 'abcdefghijklmnopqrstuvwxyz123456'),
 
-  anthropic: (): string =>
-    join('sk', '-ant-', 'api03-', 'abcdefghijklmnop'),
+  anthropic: (): string => join('sk', '-ant-', 'api03-', 'abcdefghijklmnop'),
 
-  plainApiKey: (): string =>
-    join('sk', '-plainkey', '0123456789'),
+  plainApiKey: (): string => join('sk', '-plainkey', '0123456789'),
 
-  githubPat: (): string =>
-    join('gh', 'p_', '0123456789abcdefghijklmnopqrstuvwxyz'),
+  githubPat: (): string => join('gh', 'p_', '0123456789abcdefghijklmnopqrstuvwxyz'),
 
-  githubOAuth: (): string =>
-    join('gh', 'o_', '0123456789abcdefghijklmnopqrstuvwxyz'),
+  githubOAuth: (): string => join('gh', 'o_', '0123456789abcdefghijklmnopqrstuvwxyz'),
 
-  githubShortPat: (): string =>
-    join('gh', 'p_', 'abcdefghijklmnopqrstuvwxyz'),
+  githubShortPat: (): string => join('gh', 'p_', 'abcdefghijklmnopqrstuvwxyz'),
 
-  gitlabPat: (): string =>
-    join('gl', 'pat-', '0123456789abcdefghijklmnopqrst'),
+  gitlabPat: (): string => join('gl', 'pat-', '0123456789abcdefghijklmnopqrst'),
 
-  slackBot: (): string =>
-    join('xo', 'xb-', '0123456789-', 'abcdefghijklmnop'),
+  slackBot: (): string => join('xo', 'xb-', '0123456789-', 'abcdefghijklmnop'),
 
-  awsAccessKey: (): string =>
-    join('AK', 'IA', 'IOSFODNN7EXAMPLE'),
+  awsAccessKey: (): string => join('AK', 'IA', 'IOSFODNN7EXAMPLE'),
 
-  awsSecretAccessKey: (): string =>
-    join(
-      'wJalrXUtnFEMI/',
-      'K7MDENG/',
-      'bPxRfiCYEXAMPLEKEY',
-    ),
+  awsSecretAccessKey: (): string => join('wJalrXUtnFEMI/', 'K7MDENG/', 'bPxRfiCYEXAMPLEKEY'),
 
-  awsEnvSecretAccessKey: (): string =>
-    join(
-      'wJalrXUtnFEMI/',
-      'K7MDENG',
-      'bPxRfiDOKENKEY',
-    ),
+  awsEnvSecretAccessKey: (): string => join('wJalrXUtnFEMI/', 'K7MDENG', 'bPxRfiDOKENKEY'),
 
-  googleApiKey: (): string =>
-    join(
-      'AI',
-      'za',
-      'SyA0123456789',
-      'abcdefghijklmnopqrstuv',
-    ),
+  googleApiKey: (): string => join('AI', 'za', 'SyA0123456789', 'abcdefghijklmnopqrstuv'),
 
-  npmToken: (): string =>
-    join('npm', '_', '0123456789abcdefghijklmnopqrstuvwxyz'),
+  npmToken: (): string => join('npm', '_', '0123456789abcdefghijklmnopqrstuvwxyz'),
 
   jwtLong: (): string =>
     join(
@@ -81,22 +51,10 @@ const secretFixtures = {
     ),
 
   jwtShort: (): string =>
-    join(
-      'eyJhbGciOiJIUzI1NiJ9',
-      '.',
-      'eyJzdWIiOiIxIn0',
-      '.',
-      'SflKxwRJSMeKKF2QT4fwpM',
-    ),
+    join('eyJhbGciOiJIUzI1NiJ9', '.', 'eyJzdWIiOiIxIn0', '.', 'SflKxwRJSMeKKF2QT4fwpM'),
 
   jwtStructured: (): string =>
-    join(
-      'eyJhbGciOiJIUzI1NiJ9',
-      '.',
-      'eyJzdWIiOiIxIn0',
-      '.',
-      'sig_part098765',
-    ),
+    join('eyJhbGciOiJIUzI1NiJ9', '.', 'eyJzdWIiOiIxIn0', '.', 'sig_part098765'),
 
   rsaPrivateKeyBlock: (): string =>
     [
@@ -107,11 +65,9 @@ const secretFixtures = {
     ].join('\n'),
 
   privateKeyBlock: (): string =>
-    [
-      join('-----BEGIN ', 'PRIVATE KEY-----'),
-      'MIIEow',
-      join('-----END ', 'PRIVATE KEY-----'),
-    ].join('\n'),
+    [join('-----BEGIN ', 'PRIVATE KEY-----'), 'MIIEow', join('-----END ', 'PRIVATE KEY-----')].join(
+      '\n',
+    ),
 };
 
 describe('redactSecrets pattern classes', () => {
@@ -149,15 +105,7 @@ describe('redactSecrets pattern classes', () => {
     expect(result.redactedCount).toBe(7);
     expect(result.kinds).toEqual(['provider-token']);
 
-    for (const marker of [
-      'ghp_',
-      'gho_',
-      'glpat-',
-      'xoxb-',
-      'AKIA',
-      'AIza',
-      'npm_',
-    ]) {
+    for (const marker of ['ghp_', 'gho_', 'glpat-', 'xoxb-', 'AKIA', 'AIza', 'npm_']) {
       expect(result.text).not.toContain(marker);
     }
   });
@@ -172,9 +120,7 @@ describe('redactSecrets pattern classes', () => {
   });
 
   it('redacts JWT triplets', () => {
-    const result = redactSecrets(
-      `token ${secretFixtures.jwtLong()} end`,
-    );
+    const result = redactSecrets(`token ${secretFixtures.jwtLong()} end`);
 
     expect(result.redactedCount).toBe(1);
     expect(result.kinds).toEqual(['jwt']);
@@ -182,27 +128,19 @@ describe('redactSecrets pattern classes', () => {
   });
 
   it('redacts Authorization Bearer headers', () => {
-    const result = redactSecrets(
-      'Authorization: Bearer abc123def456ghi789',
-    );
+    const result = redactSecrets('Authorization: Bearer abc123def456ghi789');
 
     expect(result.redactedCount).toBe(1);
     expect(result.kinds).toEqual(['bearer']);
-    expect(result.text).toBe(
-      'Authorization: Bearer [REDACTED:bearer]',
-    );
+    expect(result.text).toBe('Authorization: Bearer [REDACTED:bearer]');
   });
 
   it('redacts other auth headers including the whole value', () => {
-    const result = redactSecrets(
-      'Proxy-Authorization: Basic dXNlcjpwYXNzd29yZA==',
-    );
+    const result = redactSecrets('Proxy-Authorization: Basic dXNlcjpwYXNzd29yZA==');
 
     expect(result.redactedCount).toBe(1);
     expect(result.kinds).toEqual(['auth-header']);
-    expect(result.text).toBe(
-      'Proxy-Authorization: [REDACTED:auth-header]',
-    );
+    expect(result.text).toBe('Proxy-Authorization: [REDACTED:auth-header]');
 
     // The Basic credential must not survive as plaintext.
     expect(result.text).not.toContain('dXNlcjpwYXNzd29yZA');
@@ -210,18 +148,12 @@ describe('redactSecrets pattern classes', () => {
 
   it('redacts private key blocks across lines', () => {
     const result = redactSecrets(
-      [
-        'before',
-        secretFixtures.rsaPrivateKeyBlock(),
-        'after',
-      ].join('\n'),
+      ['before', secretFixtures.rsaPrivateKeyBlock(), 'after'].join('\n'),
     );
 
     expect(result.redactedCount).toBe(1);
     expect(result.kinds).toEqual(['private-key']);
-    expect(result.text).toBe(
-      'before\n[REDACTED:private-key]\nafter',
-    );
+    expect(result.text).toBe('before\n[REDACTED:private-key]\nafter');
   });
 
   it('redacts environment variable secrets with and without export', () => {
@@ -234,15 +166,9 @@ describe('redactSecrets pattern classes', () => {
     );
 
     expect(result.kinds).toEqual(['env-secret']);
-    expect(result.text).toContain(
-      'DB_PASSWORD=[REDACTED:env-secret]',
-    );
-    expect(result.text).toContain(
-      'AWS_SECRET_ACCESS_KEY=[REDACTED:env-secret]',
-    );
-    expect(result.text).toContain(
-      'NEXUS_API_KEY=[REDACTED:env-secret]',
-    );
+    expect(result.text).toContain('DB_PASSWORD=[REDACTED:env-secret]');
+    expect(result.text).toContain('AWS_SECRET_ACCESS_KEY=[REDACTED:env-secret]');
+    expect(result.text).toContain('NEXUS_API_KEY=[REDACTED:env-secret]');
     expect(result.text).not.toContain('sup3rs3cret');
   });
 });
@@ -280,19 +206,13 @@ describe('redactSecrets behavior', () => {
   });
 
   it('filters by requested kinds only', () => {
-    const text = [
-      secretFixtures.openAiProject(),
-      'and',
-      secretFixtures.githubPat(),
-    ].join(' ');
+    const text = [secretFixtures.openAiProject(), 'and', secretFixtures.githubPat()].join(' ');
 
     const onlyProviderTokens = redactSecrets(text, {
       kinds: ['provider-token'],
     });
 
-    expect(onlyProviderTokens.kinds).toEqual([
-      'provider-token',
-    ]);
+    expect(onlyProviderTokens.kinds).toEqual(['provider-token']);
     expect(onlyProviderTokens.text).toContain('sk-proj-');
     expect(onlyProviderTokens.text).not.toContain('ghp_');
 
@@ -314,32 +234,20 @@ describe('redactSecrets behavior', () => {
   });
 
   it('supports a custom replacement token', () => {
-    const result = redactSecrets(
-      `token=${secretFixtures.githubPat()}`,
-      {
-        replacement: '<secret>',
-      },
-    );
+    const result = redactSecrets(`token=${secretFixtures.githubPat()}`, {
+      replacement: '<secret>',
+    });
 
     expect(result.text).toBe('token=<secret>');
   });
 
   it('reports multiple kinds in a stable order', () => {
     const result = redactSecrets(
-      [
-        'a',
-        secretFixtures.plainApiKey(),
-        'b',
-        secretFixtures.githubPat(),
-        'c',
-      ].join(' '),
+      ['a', secretFixtures.plainApiKey(), 'b', secretFixtures.githubPat(), 'c'].join(' '),
     );
 
     expect(result.redactedCount).toBe(2);
-    expect(result.kinds).toEqual([
-      'api-key',
-      'provider-token',
-    ]);
+    expect(result.kinds).toEqual(['api-key', 'provider-token']);
   });
 });
 
@@ -363,9 +271,7 @@ describe('redactJsonStrings', () => {
 
     const output = redactJsonStrings(input) as typeof input;
 
-    expect(output.prompt).toBe(
-      'run with key [REDACTED:api-key]',
-    );
+    expect(output.prompt).toBe('run with key [REDACTED:api-key]');
     expect(output.attempts[0]).toEqual({
       note: 'token [REDACTED:provider-token]',
     });
@@ -389,9 +295,7 @@ describe('redactJsonStrings', () => {
       };
     };
 
-    expect(output.meta.header).toBe(
-      'Bearer [REDACTED:bearer]',
-    );
+    expect(output.meta.header).toBe('Bearer [REDACTED:bearer]');
 
     const date = new Date(0);
     const wrapped = { when: date };
@@ -435,23 +339,17 @@ describe('SecretKind exhaustiveness', () => {
     const samples: Record<SecretKind, string> = {
       'api-key': secretFixtures.plainApiKey(),
 
-      bearer:
-        'Bearer abc123def456ghi789',
+      bearer: 'Bearer abc123def456ghi789',
 
-      'auth-header':
-        'X-Api-Key: abc123def456ghi789',
+      'auth-header': 'X-Api-Key: abc123def456ghi789',
 
-      'private-key':
-        secretFixtures.privateKeyBlock(),
+      'private-key': secretFixtures.privateKeyBlock(),
 
-      'env-secret':
-        'NEXUS_TOKEN=abc123def456',
+      'env-secret': 'NEXUS_TOKEN=abc123def456',
 
-      jwt:
-        secretFixtures.jwtShort(),
+      jwt: secretFixtures.jwtShort(),
 
-      'provider-token':
-        secretFixtures.githubPat(),
+      'provider-token': secretFixtures.githubPat(),
     };
 
     for (const kind of kinds) {
@@ -459,10 +357,7 @@ describe('SecretKind exhaustiveness', () => {
         kinds: [kind],
       });
 
-      expect(
-        result.redactedCount,
-        `kind ${kind} must match its sample`,
-      ).toBeGreaterThan(0);
+      expect(result.redactedCount, `kind ${kind} must match its sample`).toBeGreaterThan(0);
 
       expect(result.kinds).toEqual([kind]);
     }
@@ -481,27 +376,19 @@ describe('review hardening (quoted env values, shared refs)', () => {
       const result = redactSecrets(text);
 
       expect(result.redactedCount, text).toBe(1);
-      expect(result.text).toContain(
-        '[REDACTED:env-secret]',
-      );
+      expect(result.text).toContain('[REDACTED:env-secret]');
       expect(result.text).not.toContain('abc123');
       expect(result.text).not.toContain('hunter2');
     }
 
     // Double-quoted form keeps the quotes for debuggability.
-    expect(
-      redactSecrets(
-        'MY_SECRET="abc123def456"',
-      ).text,
-    ).toBe(
+    expect(redactSecrets('MY_SECRET="abc123def456"').text).toBe(
       'MY_SECRET="[REDACTED:env-secret]"',
     );
   });
 
   it('redaction of quoted env values is idempotent', () => {
-    const once = redactSecrets(
-      'MY_SECRET="abc123def456"',
-    );
+    const once = redactSecrets('MY_SECRET="abc123def456"');
 
     const twice = redactSecrets(once.text);
 
@@ -528,17 +415,11 @@ describe('review hardening (quoted env values, shared refs)', () => {
       };
     };
 
-    expect(output.a.secret).toBe(
-      '[REDACTED:provider-token]',
-    );
+    expect(output.a.secret).toBe('[REDACTED:provider-token]');
 
-    expect(output.b.secret).toBe(
-      '[REDACTED:provider-token]',
-    );
+    expect(output.b.secret).toBe('[REDACTED:provider-token]');
 
     // The original input object is never mutated.
-    expect(inner.secret).toBe(
-      secretFixtures.githubShortPat(),
-    );
+    expect(inner.secret).toBe(secretFixtures.githubShortPat());
   });
 });

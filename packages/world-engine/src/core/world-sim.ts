@@ -1,6 +1,6 @@
 import { createCharacter, stepCharacter, type CharacterState, type Facing } from './character';
 import { EventLog } from './events';
-import { TileGrid, type Cell } from './grid';
+import { type TileGrid, type Cell } from './grid';
 
 /**
  * Fixed-step headless world simulation.

@@ -226,3 +226,34 @@ Verification:
 - DEFAULT_THEME parses against canonical ThemeManifestSchema; skins every semantic room (9) and station (10) type; carries no activity semantics
 - Theme runtime: semantic-keyed lookups with deterministic fallback chain; theme switching provably preserves semantics (8 tests)
 Open concerns: sprite/effect asset refs are placeholders for the art pipeline; Asset Studio UI comes with full Phase 9
+
+## Continuation session 2026-09-04 — visual vertical slice (Muse Spark 1.3 via OpenCode)
+
+Branch: `agent/glm-autonomous-v1`. Prior checkpoint: 9ed9e352.
+
+### Phase A — format:check root cause + full gate (fresh evidence)
+Commit(s): (this commit)
+Verification:
+- Root cause (proven, not hypothesized): repo blobs are all LF (`git ls-files --eol` shows 0 `i/crlf`), but Windows worktrees check out CRLF (`core.autocrlf=true` + `* text=auto`). Prettier had no `endOfLine` setting, so the default `lf` flagged ~181 CRLF worktree files. Proof: `prettier --check --end-of-line auto .` reduced 182 warnings to 1 genuinely unformatted file. Note: `.gitattributes` (`* text=auto`) exists since the initial commit — the handoff claim that no `.gitattributes` policy exists is stale/wrong.
+- Fix (minimal, durable): added `endOfLine: 'auto'` to the existing `prettier.config.mjs` (no new config file; a first attempt with `.prettierrc.json` was reverted because cosmiconfig precedence shadowed the real config and regressed 136 files) + `prettier --write` on the single genuinely unformatted file `packages/persistence/src/redaction/redact.test.ts` (layout-only reflow; string-literal secret splits preserved, secret-scan safe).
+- `pnpm format:check` -> PASS, exit 0 ("All matched files use Prettier code style!")
+- `pnpm lint` -> PASS, exit 0 (after fixing 3 pre-existing errors below)
+- `pnpm typecheck` -> PASS, exit 0 (after fixing 1 pre-existing error below)
+- `pnpm test` -> PASS, exit 0, 358 tests total (i18n 6, contracts 70, asset-system 8, mapping 9, bridge 10, persistence 68, replay-engine 12, simulator 30, world-engine 78, adapter-generic 11, adapter-cursor 10, adapter-codex 9, adapter-opencode 13, adapter-zcode 9, crew-simulation 10, desktop 5)
+- `cargo check --all-targets` (apps/desktop/src-tauri) -> PASS, exit 0, finished in ~65s
+- Pre-existing defects fixed to reach green (all in interrupted/unreviewed WIP, tests-first where applicable):
+  - world-engine `camera.ts`: removed unused `worldToScreen` value import (lint)
+  - world-engine `world-sim.ts`: `TileGrid` moved to `import type` (lint)
+  - world-engine `navigation.ts:240`: added `as number` indexed-access cast matching file style (typecheck, noUncheckedIndexedAccess)
+  - adapter-cursor test: unused `CURSOR_ADAPTER_DESCRIPTOR` import converted into a real observation-only capability test mirroring sibling adapters (lint)
+  - world-engine `animation-state.ts` `resolveAnimation` infinite idle<->walk recursion (4 failing tests): split into visited-guarded single-slot step + one-shot idle->walk tail (see Phase B entry)
+Ruling: `endOfLine: 'auto'` is the durable EOL policy — checkouts pass on CRLF (Windows/autocrlf) and LF (CI-fresh/Linux) worktrees; blobs stay LF via `text=auto` normalization. Do not add `eol=lf` to `.gitattributes` without reason: it would mark existing CRLF worktrees dirty.
+Open concerns: none for Phase A; CI must now be re-run remotely to confirm the GitHub failure is cleared.
+
+### Phase B (partial) — world-engine animation fallback defects
+Commit(s): (this commit)
+Verification:
+- `resolveAnimation` recursed infinitely when both idle and walk missed a direction (`resolveAnimation({}, 'testing', 'NE')` -> RangeError: Maximum call stack size exceeded). Fixed by separating single-slot resolution (direct + declared substitutes with a visited-slot guard) from a one-shot idle->walk tail: `pnpm --filter @thenexus/world-engine test` 74->78 passing.
+- Two further test-pinned semantics were missing and added without breaking existing expectations: (1) same-slot any-direction fallback for the requested slot only (partially-authored slots still animate; idle/walk tail still returns null when the direction is missing from both — per `animation-state.test.ts` "direction missing in both idle and walk"); (2) `AnimationStateMachine.advance` reports the requested slot/direction (intent) while playing the substitute animation.
+- `pnpm --filter @thenexus/world-engine test` -> PASS, 78/78; typecheck + lint clean for the package.
+Open concerns: full core audit (iso/depth/grid/spatial/nav/camera/character/sim/events/activity-map/perf) against the Phase 4 plan still to be recorded; render layer (`src/render/**`), public exports and desktop mount not started.

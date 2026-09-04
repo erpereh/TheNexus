@@ -45,18 +45,57 @@ export interface ResolvedAnimation {
  *     PACK_DIRECTIONS order) whose `fallback` is set. An object fallback
  *     targets another direction of the same slot (mirrored per its flag); a
  *     string fallback substitutes the whole 'idle'/'walk' slot;
- *  3. the 'idle' slot (mandatory in every valid pack) at the same direction;
- *  4. the 'walk' slot at the same direction;
- *  5. null - callers keep showing their previous frame.
+ *  3. for the requested slot only: the first present direction of the same
+ *     slot in PACK_DIRECTIONS order (unmirrored), so a partially-authored
+ *     slot still animates instead of dropping to idle;
+ *  4. the 'idle' slot (mandatory in every valid pack) at the same direction;
+ *  5. the 'walk' slot at the same direction;
+ *  6. null - callers keep showing their previous frame.
  *
- * The chain is deterministic and acyclic: string fallbacks never re-enter
- * their own slot, and object fallbacks resolve at most one hop.
+ * Steps 4-5 use direct hits and declared substitutes only: when the
+ * direction is missing from both idle and walk the result is null rather
+ * than an arbitrary-direction animation.
+ *
+ * The chain is deterministic and acyclic: single-slot resolution carries a
+ * visited-slot guard so string substitutes can never loop (notably the
+ * idle<->walk pair), and object fallbacks resolve at most one hop within
+ * their own slot. The cross-slot idle -> walk tail runs once per call.
  */
 export function resolveAnimation(
   table: AnimationTable,
   slot: PackAnimationSlot,
   direction: PackDirection,
 ): ResolvedAnimation | null {
+  const primary = resolveSlotOnce(table, slot, direction, new Set(), true);
+  if (primary !== null) return primary;
+  if (slot !== 'idle') {
+    const idle = resolveSlotOnce(table, 'idle', direction, new Set(), false);
+    if (idle !== null) return idle;
+  }
+  if (slot !== 'walk') {
+    const walk = resolveSlotOnce(table, 'walk', direction, new Set(), false);
+    if (walk !== null) return walk;
+  }
+  return null;
+}
+
+/**
+ * Single-slot resolution step: direct hit, then the slot's declared
+ * substitutes, then (when `allowAnyDirection`) the first present direction
+ * of the same slot. String substitutes ('idle'/'walk') resolve through this
+ * same step with the shared visited guard instead of the full cross-slot
+ * chain. Never applies the idle -> walk tail itself; the caller owns that
+ * order.
+ */
+function resolveSlotOnce(
+  table: AnimationTable,
+  slot: PackAnimationSlot,
+  direction: PackDirection,
+  visiting: Set<PackAnimationSlot>,
+  allowAnyDirection: boolean,
+): ResolvedAnimation | null {
+  if (visiting.has(slot)) return null;
+  visiting.add(slot);
   const direct = table[slot]?.[direction];
   if (direct !== undefined) {
     return { animation: direct, mirrored: false, slot, direction };
@@ -69,7 +108,7 @@ export function resolveAnimation(
       if (fallback === undefined) continue;
       if (typeof fallback === 'string') {
         if (fallback === slot) continue; // never re-enter the same slot
-        const substituted = resolveAnimation(table, fallback, direction);
+        const substituted = resolveSlotOnce(table, fallback, direction, visiting, false);
         if (substituted !== null) return substituted;
       } else {
         const target = table[slot]?.[fallback.direction];
@@ -83,14 +122,14 @@ export function resolveAnimation(
         }
       }
     }
-  }
-  if (slot !== 'idle') {
-    const idle = resolveAnimation(table, 'idle', direction);
-    if (idle !== null) return idle;
-  }
-  if (slot !== 'walk') {
-    const walk = resolveAnimation(table, 'walk', direction);
-    if (walk !== null) return walk;
+    if (allowAnyDirection) {
+      for (const dir of PACK_DIRECTIONS) {
+        const candidate = slotEntry[dir];
+        if (candidate !== undefined) {
+          return { animation: candidate, mirrored: false, slot, direction: dir };
+        }
+      }
+    }
   }
   return null;
 }
@@ -171,9 +210,11 @@ export class AnimationStateMachine {
     if (resolved === null) {
       return { slot, direction, mirrored: false, frameIndex: 0, animation: null };
     }
+    // Report the requested slot/direction (the character's intent) while
+    // playing the best substitute animation found for it.
     return {
-      slot: resolved.slot,
-      direction: resolved.direction,
+      slot,
+      direction,
       mirrored: resolved.mirrored,
       frameIndex: frameIndexAt(resolved.animation, this.elapsedMs),
       animation: resolved.animation,

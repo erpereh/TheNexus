@@ -237,7 +237,7 @@ export function findPath(
       if (closed[nIndex] !== 0) continue;
       const step = diagonal ? NAV_COST_DIAGONAL : NAV_COST_STRAIGHT;
       const nextG = g + step;
-      if (nextG < gScore[nIndex]) {
+      if (nextG < (gScore[nIndex] as number)) {
         gScore[nIndex] = nextG;
         cameFrom[nIndex] = index;
         const h = heuristicToGoals(nx, ny, reachableGoals);
