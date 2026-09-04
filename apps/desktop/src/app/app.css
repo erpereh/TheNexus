@@ -66,3 +66,7 @@ main {
 .world-side dt {
   font-weight: 600;
 }
+
+.world-side dd {
+  overflow-wrap: anywhere;
+}

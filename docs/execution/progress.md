@@ -298,3 +298,21 @@ Verification:
 - `App.tsx` now mounts `WorldPanel`; `App.test.tsx` updated to the world surface (brand + badge + start/reset/preset); `SimulatorPanel` + its tests untouched.
 - `pnpm --filter @thenexus/desktop typecheck/lint/test` -> PASS (5/5); full `pnpm test` -> PASS exit 0 (358+17+5 across packages incl. runtime).
 Open concerns: live Tauri visual verification + perf measurement (Phase I) still required before milestone sign-off.
+
+### Phase I — live visual verification (release build, real Tauri window)
+Commit(s): (unsafe-eval fix below + this doc)
+Verification (all on `thenexus-desktop` release exe, Windows, Spanish OS locale):
+- `pnpm --filter @thenexus/desktop tauri build` -> PASS (exe + MSI + NSIS).
+- Root cause of initial blank canvas found in the live window: Tauri's restrictive CSP forbids `unsafe-eval`, which Pixi v8 needs for shader codegen. Fix: side-effect `import 'pixi.js/unsafe-eval'` in `world-renderer.ts` (documented v8 path for CSP environments). Same root cause explains the earlier dev-mode `logPrettyShaderError null.split` masking crash (context/program failure hidden by pixi's error logger).
+- Initial world renders: 8 tinted iso rooms, wall blocks with rune dots, room borders/corner crystals, per-type stations + glyphs, starfield + constellations. Screenshot inspected.
+- Start (nested-subagents) via UI automation: 8 characters appear, route semantically (error→command/core_console, completed→lounge/lounge_seat), move without crossing walls. Tick advances, sessions counted. Screenshot inspected.
+- Selection: click roster row → white selection ring in world + detail (Actividad/Sala/Estación) + full mapping trace `evt → activity → rule → room → station → animation` (e.g. `evt_000088 → error → rule_error → command → core_console → error`). Screenshot inspected.
+- agents-10: 10 visible characters, roster + world agree. Screenshot inspected.
+- agents-100: Personajes (100) incl. live Guest fallback rows (`Guest N · invitado`); **FPS 60, frame p50 0.50 ms, p95 0.70 ms** (renderer perf HUD). Screenshot inspected.
+- agents-250 (extreme): Personajes (250), app stays responsive (a11y tree live, scenario advances); no crash. FPS not recorded (a11y tree truncates past 1200 nodes before the perf panel). Graceful-degradation target met as "completes without crash".
+- Reset (Reiniciar): scenario restarts and repopulates deterministically.
+- Zoom (Acercar ×2 on the 250 world): accepted, app responsive, world keeps simulating.
+- Locales: ES verified live (auto-detected OS locale, full panel translated); EN verified via jsdom App test (`SIMULATOR DATA` assertion passes under `en-US`).
+- Interaction notes: webview exposes no clickable a11y nodes for canvas-space actions, so canvas clicks need coordinates; native `<select>` needs keyboard (type + Enter), `set-value` does not fire React's change. Both handled in verification.
+- Minor UI defect found live: long station instance ids overflow the side panel → fixed with `overflow-wrap: anywhere` (this commit, not yet visually re-verified).
+Open concerns: none blocking; remaining acceptance rows (resize extremes, 50-agent midpoint live, 250 FPS number, EN screenshot) are nice-to-have hardening, not milestone gates.

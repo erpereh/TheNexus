@@ -1,4 +1,8 @@
 import { Application } from 'pixi.js';
+// CSP-safe shader codegen: the desktop shell forbids `unsafe-eval`, so the
+// default `new Function` shader path throws at init. This side-effect import
+// installs Pixi's supported fallback (see v8 migration guide).
+import 'pixi.js/unsafe-eval';
 import type { ThemeManifest } from '@thenexus/contracts';
 import { createThemeRuntime, type ThemeRuntime } from '@thenexus/asset-system';
 import { DEFAULT_THEME } from '@thenexus/asset-system';
