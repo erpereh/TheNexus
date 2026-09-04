@@ -5,20 +5,27 @@ This directory is the canonical documentation set for TheNexus. It is intentiona
 ## Read this first
 
 1. [`superpowers/specs/2026-09-03-the-nexus-design.md`](superpowers/specs/2026-09-03-the-nexus-design.md) — canonical end-to-end design specification.
-2. [`product/01-vision-and-principles.md`](product/01-vision-and-principles.md) — product identity and non-negotiable principles.
-3. [`product/02-product-requirements.md`](product/02-product-requirements.md) — functional and non-functional requirements.
-4. [`architecture/01-system-architecture.md`](architecture/01-system-architecture.md) — package and runtime architecture.
-5. [`quality/01-testing-and-quality-bar.md`](quality/01-testing-and-quality-bar.md) — definition of done and verification strategy.
-6. [`../AGENTS.md`](../AGENTS.md) — rules that every coding agent must follow.
+2. [`execution/HANDOFF-2026-09-04.md`](execution/HANDOFF-2026-09-04.md) — current implementation checkpoint, fresh CI truth, partial work and exact continuation order.
+3. [`agents/continuation-prompt.md`](agents/continuation-prompt.md) — provider-neutral prompt for resuming in any capable coding harness.
+4. [`product/01-vision-and-principles.md`](product/01-vision-and-principles.md) — product identity and non-negotiable principles.
+5. [`product/02-product-requirements.md`](product/02-product-requirements.md) — functional and non-functional requirements.
+6. [`architecture/01-system-architecture.md`](architecture/01-system-architecture.md) — package and runtime architecture.
+7. [`quality/01-testing-and-quality-bar.md`](quality/01-testing-and-quality-bar.md) — definition of done and verification strategy.
+8. [`../AGENTS.md`](../AGENTS.md) — rules that every coding agent must follow.
 
 ## Autonomous agent execution
 
+- [`execution/HANDOFF-2026-09-04.md`](execution/HANDOFF-2026-09-04.md) — audited continuation checkpoint for the interrupted GLM implementation run.
+- [`agents/continuation-prompt.md`](agents/continuation-prompt.md) — provider-neutral continuation prompt.
 - [`agents/README.md`](agents/README.md) — execution documentation index.
 - [`agents/zcode-runbook.md`](agents/zcode-runbook.md) — human setup for a long ZCode/GLM-5.3-Flash run.
-- [`agents/zcode-master-prompt.md`](agents/zcode-master-prompt.md) — primary coordinator prompt.
+- [`agents/zcode-master-prompt.md`](agents/zcode-master-prompt.md) — original ZCode primary coordinator prompt.
 - [`execution/acceptance-checklist.md`](execution/acceptance-checklist.md) — evidence-based Goal Mode completion contract.
 - [`execution/progress.md`](execution/progress.md) — durable autonomous progress ledger.
 - [`superpowers/plans/2026-09-03-bootstrap-core.md`](superpowers/plans/2026-09-03-bootstrap-core.md) — first detailed implementation plan.
+- [`superpowers/plans/2026-09-04-phase-1-domain-contracts.md`](superpowers/plans/2026-09-04-phase-1-domain-contracts.md) — domain-contract implementation plan.
+- [`superpowers/plans/2026-09-04-phase-3-persistence-replay.md`](superpowers/plans/2026-09-04-phase-3-persistence-replay.md) — persistence and replay implementation plan.
+- [`superpowers/plans/2026-09-04-phase-4-world-engine.md`](superpowers/plans/2026-09-04-phase-4-world-engine.md) — interrupted world-engine implementation plan.
 
 ## Product
 
