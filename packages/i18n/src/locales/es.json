@@ -13,5 +13,32 @@
     "reset": "Reiniciar",
     "panelLabel": "Panel del simulador de harness",
     "subagentOf": "subagente de {{agentId}}"
+  },
+  "world": {
+    "title": "Mundo demo",
+    "badge": "DATOS SIMULADOS — mundo determinista en vivo",
+    "panelLabel": "Panel del mundo demo determinista",
+    "scenario": "Escenario",
+    "start": "Iniciar",
+    "reset": "Reiniciar",
+    "overview": "Vista general",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "follow": "Seguir",
+    "unfollow": "Dejar de seguir",
+    "characters": "Personajes",
+    "sessions": "Sesiones",
+    "tick": "Tick",
+    "activity": "Actividad",
+    "room": "Sala",
+    "station": "Estación",
+    "destination": "Redirigido a",
+    "mappingTrace": "Traza de mapeo",
+    "noSelection": "Selecciona un personaje para inspeccionar su traza de mapeo.",
+    "guest": "invitado",
+    "perf": "Rendimiento",
+    "fps": "FPS",
+    "p50": "Fotograma p50",
+    "p95": "Fotograma p95"
   }
 }

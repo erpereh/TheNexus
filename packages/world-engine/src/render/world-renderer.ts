@@ -38,8 +38,6 @@ export interface RendererOptions {
   theme: ThemeManifest;
   /** Called first every tick with clamped render dt; host advances session. */
   onTick?: (dtMs: number) => void;
-  /** World character id (or null) picked by canvas click. */
-  onSelect?: (id: string | null) => void;
   accentPalette?: readonly number[];
 }
 
@@ -95,34 +93,6 @@ export class WorldRenderer {
     this.applyRunning();
   };
 
-  private readonly onPointerDown = (event: PointerEvent): void => {
-    const select = this.opts.onSelect;
-    if (select === undefined || this.snapshot === null) return;
-    const rect = this.app.canvas.getBoundingClientRect();
-    const world = screenToWorld(
-      { x: event.clientX - rect.left, y: event.clientY - rect.top },
-      this.camera,
-      this.viewport,
-    );
-    let best: string | null = null;
-    let bestDist = Number.POSITIVE_INFINITY;
-    // Pick radius² in grid units (approx: one screen pixel ≈ 1/32 grid cell at zoom 1).
-    const pickRadius = PICK_RADIUS_PX / 32 / Math.max(0.01, this.camera.zoom);
-    for (const character of this.snapshot.characters) {
-      const tracked = this.characters.get(character.id);
-      const pos = tracked !== undefined && tracked.initialized ? tracked.shown : character.cell;
-      const dx = pos.x - world.x;
-      const dy = pos.y - world.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist <= pickRadius && dist < bestDist) {
-        best = character.id;
-        bestDist = dist;
-      }
-    }
-    this.selectedId = best;
-    select(best);
-  };
-
   private constructor(app: Application, opts: RendererOptions, theme: ThemeRuntime) {
     this.app = app;
     this.opts = opts;
@@ -153,12 +123,36 @@ export class WorldRenderer {
     renderer.background.redraw({ width, height });
     renderer.viewport = { width, height };
     document.addEventListener('visibilitychange', renderer.onVisibility);
-    canvas.addEventListener('pointerdown', renderer.onPointerDown);
     app.ticker.add((ticker) => {
       renderer.tick(Math.min(ticker.deltaMS, MAX_TICK_DT_MS));
     });
     renderer.applyRunning();
     return renderer;
+  }
+
+  /**
+   * Nearest world character to a canvas CSS-pixel point, within a
+   * zoom-compensated pick radius. Pure query — selection state is owned by
+   * the host through `setSelected`.
+   */
+  pick(sx: number, sy: number): string | null {
+    if (this.snapshot === null) return null;
+    const world = screenToWorld({ x: sx, y: sy }, this.camera, this.viewport);
+    let best: string | null = null;
+    let bestDist = Number.POSITIVE_INFINITY;
+    const pickRadius = PICK_RADIUS_PX / 32 / Math.max(0.01, this.camera.zoom);
+    for (const character of this.snapshot.characters) {
+      const tracked = this.characters.get(character.id);
+      const pos = tracked !== undefined && tracked.initialized ? tracked.shown : character.cell;
+      const dx = pos.x - world.x;
+      const dy = pos.y - world.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist <= pickRadius && dist < bestDist) {
+        best = character.id;
+        bestDist = dist;
+      }
+    }
+    return best;
   }
 
   setLayout(layout: ShipLayoutView): void {
@@ -217,7 +211,6 @@ export class WorldRenderer {
     if (this.destroyed) return;
     this.destroyed = true;
     document.removeEventListener('visibilitychange', this.onVisibility);
-    this.app.canvas.removeEventListener('pointerdown', this.onPointerDown);
     for (const tracked of this.characters.values()) tracked.node.destroy();
     this.characters.clear();
     this.app.destroy();

@@ -257,3 +257,44 @@ Verification:
 - Two further test-pinned semantics were missing and added without breaking existing expectations: (1) same-slot any-direction fallback for the requested slot only (partially-authored slots still animate; idle/walk tail still returns null when the direction is missing from both — per `animation-state.test.ts` "direction missing in both idle and walk"); (2) `AnimationStateMachine.advance` reports the requested slot/direction (intent) while playing the substitute animation.
 - `pnpm --filter @thenexus/world-engine test` -> PASS, 78/78; typecheck + lint clean for the package.
 Open concerns: full core audit (iso/depth/grid/spatial/nav/camera/character/sim/events/activity-map/perf) against the Phase 4 plan still to be recorded; render layer (`src/render/**`), public exports and desktop mount not started.
+
+### Phase B (complete) — core audit
+Commit(s): (covered by implementation commits below; no behavior changes needed)
+Verification:
+- All 12 core modules read against `docs/superpowers/plans/2026-09-04-phase-4-world-engine.md` locked formulas: 2:1 iso (64×32), depth `DEPTH_SCALE=4096` + layer biases + far-corner + id tie-break, TileGrid, id-ordered spatial index, integer A* (1000/1414, no corner cutting, fixed N..NW order, (f,h,counter) heap), camera (zoom [0.5,3], 1-exp(-8dt) follow, zoomAt anchor, frameCells, ship-visibility clamp), dominant-axis facing, fixed 100ms tick with id-ascending processing + cell claims, deterministic event log, full ACTIVITY_TO_SLOT coverage, ring/p50/p95/marks perf.
+- `core/**` imports verified free of pixi/DOM/React/provider code (grep, zero hits).
+- `pnpm --filter @thenexus/world-engine test` -> PASS 78/78; typecheck + lint clean.
+Open concerns: none for core; render/desktop integration follows.
+
+### Phase C — render boundary plan
+Commit(s): 2f5a42bf (plan doc rides with the render commit)
+Verification:
+- Two read-only Explore subagents returned interface inventories (world-engine public surface; simulator→bridge→mapping→crew→asset→desktop pipeline) plus gap analysis (mapping outputs types, world needs instance paths; col/row vs x/y; no world-engine exports; Assignment schema divergence — out of scope, assignments never persisted in the slice).
+- PixiJS v8 API verified against official docs: async `new Application()` + `app.init()`, `app.canvas` (replaces `view`), `CullerPlugin` via `extensions.add` + `cullable/cullableChildren/cullArea`.
+- Plan written to `docs/superpowers/plans/2026-09-04-phase-4-visual-vertical-slice.md` (architecture, locked renderer conventions incl. cell-center rule, exact files/interfaces/tests, commit boundaries).
+Open concerns: none; implementation started immediately per plan.
+
+### Phase D — PixiJS render layer
+Commit(s): 2f5a42bf
+Verification:
+- `pixi.js@^8.18.0` + `@thenexus/asset-system` deps on `@thenexus/world-engine`; `src/render/**` implemented (ship-view, layers, culling, background, theme-colors, room-graphics, station-graphics, character-graphics, world-renderer); `src/index.ts` barrel exports core + render.
+- `pnpm --filter @thenexus/world-engine typecheck` -> PASS; `lint` -> PASS (exit 0); `test` -> PASS 78/78 (render has no node tests per Phase 4 Task 8 rule; compile-checked + desktop smoke test pending).
+- Fixes during implementation: pixi v8 `ellipse` takes 4 args (no rotation); render tsconfig consumers need DOM lib (runtime tsconfig updated).
+Open concerns: live visual verification pending (Phase I).
+
+### Phase E/F — demo ship + runtime orchestrator
+Commit(s): cc25b2c8
+Verification:
+- New `packages/runtime` (`WorldSession` + `buildDemoShip`): simulator → bus → MappingEngine → crew → A* approach routing → WorldSim → snapshot/presentation/trace. World char id `w_<agentId>`; crew label/guest join; terminal release policy; unreachable-station rerouting recorded as `destinationStationId` + `station-unreachable` trace steps (mapping resolution stays honest).
+- `pnpm --filter @thenexus/runtime test` -> PASS 17/17 (determinism, coding/testing/researching routing, parent/subagent separation, Guest fallback, sealed-station fallback, hold-on-unreachable, walkability invariant, reset, subscription hygiene, 100-agent preset); typecheck + lint clean.
+Open concerns: desktop mount + live visual verification pending.
+
+### Phase G — desktop visual demo surface
+Commit(s): (this commit)
+Verification:
+- `WorldRenderer.pick()` replaced the canvas-pointer selection listener (host owns drag-vs-click, pan, wheel zoom); renderer keeps `setSelected` ring display.
+- New `apps/desktop/src/world/WorldCanvas.tsx` (renderer lifecycle, ResizeObserver + jsdom fallback, StrictMode-safe destroy, 2Hz-free frame path) and `WorldPanel.tsx` (preset/start/reset, overview/zoom/follow, roster, selected-agent mapping trace `event → activity → rule → room → station → animation`, perf HUD), plus `app.css` world-dominant layout.
+- `world.*` i18n keys added to EN+ES (parity intact, 6/6 i18n tests pass).
+- `App.tsx` now mounts `WorldPanel`; `App.test.tsx` updated to the world surface (brand + badge + start/reset/preset); `SimulatorPanel` + its tests untouched.
+- `pnpm --filter @thenexus/desktop typecheck/lint/test` -> PASS (5/5); full `pnpm test` -> PASS exit 0 (358+17+5 across packages incl. runtime).
+Open concerns: live Tauri visual verification + perf measurement (Phase I) still required before milestone sign-off.

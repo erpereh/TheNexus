@@ -13,5 +13,32 @@
     "reset": "Reset",
     "panelLabel": "Harness simulator panel",
     "subagentOf": "subagent of {{agentId}}"
+  },
+  "world": {
+    "title": "Demo World",
+    "badge": "SIMULATOR DATA — live deterministic world",
+    "panelLabel": "Deterministic demo world panel",
+    "scenario": "Scenario",
+    "start": "Start",
+    "reset": "Reset",
+    "overview": "Overview",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "characters": "Characters",
+    "sessions": "Sessions",
+    "tick": "Tick",
+    "activity": "Activity",
+    "room": "Room",
+    "station": "Station",
+    "destination": "Routed to",
+    "mappingTrace": "Mapping trace",
+    "noSelection": "Select a character to inspect its mapping trace.",
+    "guest": "guest",
+    "perf": "Performance",
+    "fps": "FPS",
+    "p50": "Frame p50",
+    "p95": "Frame p95"
   }
 }

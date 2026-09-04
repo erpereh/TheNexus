@@ -14,14 +14,19 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "@thenexus/asset-system": "workspace:*",
     "@thenexus/bridge": "workspace:*",
     "@thenexus/contracts": "workspace:*",
-    "@thenexus/simulator": "workspace:*",
-    "@tauri-apps/api": "^2.11.1",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "@thenexus/crew-simulation": "workspace:*",
     "@thenexus/i18n": "workspace:*",
-    "i18next": "^26.4.2"
+    "@thenexus/mapping": "workspace:*",
+    "@thenexus/runtime": "workspace:*",
+    "@thenexus/simulator": "workspace:*",
+    "@thenexus/world-engine": "workspace:*",
+    "i18next": "^26.4.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",
