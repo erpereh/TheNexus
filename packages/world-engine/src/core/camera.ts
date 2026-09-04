@@ -1,12 +1,16 @@
-import { gridToScreen, screenToGrid, screenToWorld } from './iso';
+import { screenToTile, tileToScreen, screenToWorldTop } from './ortho';
 import type { GridPoint, ScreenPoint, Viewport } from './iso';
 import type { GridRect } from './grid';
 
 /**
- * Deterministic isometric camera: zoom clamping, cursor-anchored zooming,
- * exponential follow smoothing, bbox framing and a "ship never fully leaves
+ * Deterministic top-down camera: zoom clamping, cursor-anchored zooming,
+ * exponential follow smoothing, bbox framing and a "house never fully leaves
  * the viewport" guarantee. Pure math over grid-space centers; the render
- * layer reads center/zoom and projects through `worldToScreen`.
+ * layer reads center/zoom and projects through `worldToScreenTop`.
+ *
+ * Previously isometric; switched to the orthographic projection for the
+ * Project House milestone (rectangular rooms stay rectangular on screen).
+ * The legacy isometric math remains isolated in `iso.ts`.
  */
 
 export const ZOOM_MIN = 0.5;
@@ -56,9 +60,9 @@ export class Camera {
    * same world position projects back onto the same pixel afterwards.
    */
   zoomAt(screenPoint: ScreenPoint, nextZoom: number, viewport: Viewport): void {
-    const worldBefore = screenToWorld(screenPoint, this.view(), viewport);
+    const worldBefore = screenToWorldTop(screenPoint, this.view(), viewport);
     this.zoom = clampZoom(nextZoom);
-    const worldScreen = gridToScreen(worldBefore.x, worldBefore.y);
+    const worldScreen = tileToScreen(worldBefore.x, worldBefore.y);
     const camX = worldScreen.x - (screenPoint.x - viewport.width / 2) / this.zoom;
     const camY = worldScreen.y - (screenPoint.y - viewport.height / 2) / this.zoom;
     this.setCenterFromScreen(camX, camY);
@@ -70,7 +74,7 @@ export class Camera {
    * shifts the camera center left in screen space, as with grab-panning.
    */
   panBy(dxScreen: number, dyScreen: number, viewport: Viewport): void {
-    const cam = gridToScreen(this.center.x, this.center.y);
+    const cam = tileToScreen(this.center.x, this.center.y);
     this.setCenterFromScreen(cam.x - dxScreen / this.zoom, cam.y - dyScreen / this.zoom);
     this.enforceShipVisible(viewport);
   }
@@ -115,7 +119,7 @@ export class Camera {
       { x: minGX, y: maxGY },
       { x: maxGX, y: maxGY },
     ];
-    const screenCorners = corners.map((c) => gridToScreen(c.x, c.y));
+    const screenCorners = corners.map((c) => tileToScreen(c.x, c.y));
     const minX = Math.min(...screenCorners.map((p) => p.x));
     const maxX = Math.max(...screenCorners.map((p) => p.x));
     const minY = Math.min(...screenCorners.map((p) => p.y));
@@ -134,7 +138,7 @@ export class Camera {
   }
 
   private setCenterFromScreen(camX: number, camY: number): void {
-    const g = screenToGrid(camX, camY);
+    const g = screenToTile(camX, camY);
     this.center = { x: g.x, y: g.y };
   }
 
@@ -155,14 +159,14 @@ export class Camera {
       { x: bounds.x, y: bounds.y + bounds.height },
       { x: bounds.x + bounds.width, y: bounds.y + bounds.height },
     ];
-    const screenCorners = corners.map((c) => gridToScreen(c.x, c.y));
+    const screenCorners = corners.map((c) => tileToScreen(c.x, c.y));
     const minSX = Math.min(...screenCorners.map((p) => p.x));
     const maxSX = Math.max(...screenCorners.map((p) => p.x));
     const minSY = Math.min(...screenCorners.map((p) => p.y));
     const maxSY = Math.max(...screenCorners.map((p) => p.y));
     const marginX = viewport.width / 2 - SHIP_VISIBILITY_MARGIN_PX;
     const marginY = viewport.height / 2 - SHIP_VISIBILITY_MARGIN_PX;
-    const cam = gridToScreen(this.center.x, this.center.y);
+    const cam = tileToScreen(this.center.x, this.center.y);
     if (marginX > 0) {
       cam.x = Math.min(maxSX + marginX / this.zoom, Math.max(minSX - marginX / this.zoom, cam.x));
     }

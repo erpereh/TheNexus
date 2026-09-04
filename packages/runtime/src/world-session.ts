@@ -134,6 +134,8 @@ export class WorldSession {
   private simTimeMs = 0;
   private timeRemainderMs = 0;
   private spawnCursor = 0;
+  /** Last live viewport seen (mount fit, pan or zoom); reused by start/reset. */
+  private lastViewport: Viewport = { width: 1280, height: 800 };
   private listenerErrors: readonly { error: unknown; eventId: string }[] = [];
 
   constructor(opts: WorldSessionOptions) {
@@ -211,7 +213,7 @@ export class WorldSession {
       this.processEvent(event);
     });
     this.unsubscribers = [unsubscribe];
-    this.frameShip();
+    this.frameShip(this.lastViewport);
   }
 
   /** Rebuilds from the same scenario input: byte-identical re-runs. */
@@ -293,15 +295,18 @@ export class WorldSession {
 
   /** Frames the whole ship (overview) for the given canvas size. */
   frameShip(viewport: Viewport = { width: 1280, height: 800 }): void {
+    this.lastViewport = { ...viewport };
     const points: GridPoint[] = this.ship.spawnCells.map((cell) => ({ x: cell.x, y: cell.y }));
     this.camera.frameCells(points, viewport);
   }
 
   panBy(dxScreen: number, dyScreen: number, viewport: Viewport): void {
+    this.lastViewport = { ...viewport };
     this.camera.panBy(dxScreen, dyScreen, viewport);
   }
 
   zoomAt(screenPoint: { x: number; y: number }, nextZoom: number, viewport: Viewport): void {
+    this.lastViewport = { ...viewport };
     this.camera.zoomAt(screenPoint, nextZoom, viewport);
   }
 

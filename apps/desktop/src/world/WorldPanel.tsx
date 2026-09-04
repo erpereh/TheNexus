@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import type { CrewCharacter, SemanticActivity } from '@thenexus/contracts';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CrewCharacter } from '@thenexus/contracts';
+import type { AppLocale } from '@thenexus/i18n';
 import { WorldSession, type ScenarioPresetName } from '@thenexus/runtime';
 import type { WorldRenderer } from '@thenexus/world-engine/render';
 import { useT } from '../app/I18nProvider';
 import { WorldCanvas } from './WorldCanvas';
+import { useSessionPoll } from './useSessionPoll';
 
 const CREW_NAMES = [
   'Nova',
@@ -50,6 +52,11 @@ function devCrewMember(index: number): CrewCharacter {
   };
 }
 
+/** Standard 12-member demo crew for the project house. */
+export function createDemoSession(): WorldSession {
+  return new WorldSession({ roster: CREW_NAMES.map((_, i) => devCrewMember(i)) });
+}
+
 const PRESETS: readonly ScenarioPresetName[] = [
   'single-agent',
   'nested-subagents',
@@ -60,91 +67,66 @@ const PRESETS: readonly ScenarioPresetName[] = [
   'agents-250',
 ];
 
-interface PanelAgent {
-  worldId: string;
-  label: string;
-  activity: SemanticActivity;
-  room: string;
-  station: string;
-  statusSymbol: string;
-  isGuest: boolean;
-}
+export type DrawerTab = 'home' | 'agents' | 'tasks' | 'settings';
 
-interface PanelState {
-  started: boolean;
-  tick: number;
-  agentCount: number;
-  sessionCount: number;
-  agents: PanelAgent[];
-  perf: { fps: number; p50: number; p95: number } | null;
-}
+/** roomInstanceId -> rooms.* i18n key for the in-world floor labels. */
+const ROOM_I18N_KEY: Readonly<Record<string, string>> = {
+  room_command: 'planning',
+  room_engineering: 'development',
+  room_observatory: 'research',
+  room_library: 'library',
+  room_laboratory: 'testing',
+  room_communications: 'communications',
+  room_archive: 'archive',
+  room_lounge: 'lounge',
+};
 
-function statusSymbol(activity: SemanticActivity, waiting: boolean): string {
-  if (activity === 'error') return '✕';
-  if (activity === 'completed') return '★';
-  if (activity === 'waiting-user' || waiting) return '❚❚';
-  return '●';
+interface WorldPanelProps {
+  session?: WorldSession;
+  tab?: DrawerTab;
+  locale?: AppLocale;
+  onLocaleChange?: (locale: AppLocale) => void;
 }
 
 /**
- * Developer/demo world surface. The PixiJS world dominates; this panel owns
- * scenario controls (start/reset/preset), camera controls (overview, zoom,
- * follow), the character roster, the selected-agent mapping trace and dev
- * performance metrics. All world state is polled at 2Hz — never at frame
- * rate — while the canvas renders smoothly underneath.
+ * Project-house world surface. The PixiJS canvas dominates; floating
+ * overlays carry the selected agent and camera controls, while the drawer
+ * switches between scenario (home), roster (agents), timeline (tasks) and
+ * app settings. All world state is polled at 2Hz — never at frame rate —
+ * while the canvas renders smoothly underneath.
  *
  * Accepts an optional prebuilt session (test seam); otherwise creates the
  * standard 12-member demo crew.
  */
-export function WorldPanel({ session: sessionProp }: { session?: WorldSession }) {
+export function WorldPanel({
+  session: sessionProp,
+  tab = 'home',
+  locale,
+  onLocaleChange,
+}: WorldPanelProps) {
   const t = useT();
-  const [session] = useState(
-    () => sessionProp ?? new WorldSession({ roster: CREW_NAMES.map((_, i) => devCrewMember(i)) }),
-  );
+  const [session] = useState(() => sessionProp ?? createDemoSession());
   const [preset, setPreset] = useState<ScenarioPresetName>('nested-subagents');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [following, setFollowing] = useState(false);
-  const [panel, setPanel] = useState<PanelState>({
-    started: false,
-    tick: 0,
-    agentCount: 0,
-    sessionCount: 0,
-    agents: [],
-    perf: null,
-  });
+  const [perf, setPerf] = useState<{ fps: number; p50: number; p95: number } | null>(null);
   const rendererRef = useRef<WorldRenderer | null>(null);
   const sessionRef = useRef(session);
+  const poll = useSessionPoll(session);
 
   useEffect(() => {
     sessionRef.current = session;
   });
 
+  // Renderer perf is read on the same 2Hz cadence as the session poll.
   useEffect(() => {
     const timer = setInterval(() => {
-      const live = sessionRef.current;
-      const snap = live.snapshot();
-      const agents: PanelAgent[] = snap.world.characters.map((c) => {
-        const info = snap.presentation.get(c.id);
-        const trace = snap.traces.get(c.id);
-        return {
-          worldId: c.id,
-          label: info?.label ?? c.id,
-          activity: info?.activity ?? 'idle',
-          room: trace?.roomType ?? '—',
-          station: trace?.stationType ?? '—',
-          statusSymbol: statusSymbol(info?.activity ?? 'idle', info?.waiting ?? c.waiting),
-          isGuest: info?.isGuest ?? false,
-        };
-      });
-      const perf = rendererRef.current?.perfSnapshot() ?? null;
-      setPanel({
-        started: snap.world.characters.length > 0 || snap.simTimeMs > 0,
-        tick: snap.tick,
-        agentCount: snap.counts.agents,
-        sessionCount: snap.counts.sessions,
-        agents,
-        perf: perf === null ? null : { fps: perf.fps, p50: perf.frameP50Ms, p95: perf.frameP95Ms },
-      });
+      const snapshot = rendererRef.current?.perfSnapshot() ?? null;
+      setPerf(
+        snapshot === null
+          ? null
+          : { fps: snapshot.fps, p50: snapshot.frameP50Ms, p95: snapshot.frameP95Ms },
+      );
     }, 500);
     return () => clearInterval(timer);
   }, []);
@@ -154,21 +136,104 @@ export function WorldPanel({ session: sessionProp }: { session?: WorldSession })
     sessionRef.current.followWorldId = following ? selectedId : null;
   }, [following, selectedId]);
 
+  const roomLabels = useMemo(() => {
+    const labels: Record<string, { title: string; subtitle: string }> = {};
+    for (const [roomId, key] of Object.entries(ROOM_I18N_KEY)) {
+      labels[roomId] = {
+        title: t(`rooms.${key}.title`),
+        subtitle: t(`rooms.${key}.subtitle`),
+      };
+    }
+    return labels;
+  }, [t]);
+
+  const selected =
+    selectedId === null ? null : (poll.agents.find((a) => a.worldId === selectedId) ?? null);
+
   return (
-    <section aria-label={t('world.panelLabel')} data-testid="world-panel">
-      <header>
-        <h2>{t('world.title')}</h2>
-        <p data-testid="simulator-badge">{t('world.badge')}</p>
-      </header>
-      <div className="world-layout">
+    <section className="world" aria-label={t('world.panelLabel')} data-testid="world-panel">
+      <div className="world-stage">
         <WorldCanvas
           session={session}
           selectedId={selectedId}
           onSelect={setSelectedId}
           rendererRef={rendererRef}
+          roomLabels={roomLabels}
         />
-        <aside className="world-side">
-          <div>
+        {selected !== null ? (
+          <button
+            type="button"
+            className="world-selected-card"
+            data-testid="world-selected-card"
+            onClick={() => setSelectedId(null)}
+            title={t('world.noSelection')}
+          >
+            <span aria-hidden="true">{selected.statusSymbol}</span>
+            <strong>{selected.label}</strong>
+            <span>
+              {selected.activity} · {selected.room}
+            </span>
+          </button>
+        ) : null}
+        <div className="world-camera" role="toolbar" aria-label={t('world.camera')}>
+          <button
+            type="button"
+            data-testid="world-overview"
+            onClick={() => {
+              const size = rendererRef.current?.viewportSize();
+              if (size !== undefined) session.frameShip(size);
+              else session.frameShip();
+            }}
+          >
+            {t('world.overview')}
+          </button>
+          <button
+            type="button"
+            data-testid="world-zoom-in"
+            onClick={() => {
+              const size = rendererRef.current?.viewportSize() ?? { width: 1280, height: 800 };
+              session.zoomAt(
+                { x: size.width / 2, y: size.height / 2 },
+                session.camera.zoom * 1.25,
+                size,
+              );
+            }}
+          >
+            {t('world.zoomIn')}
+          </button>
+          <button
+            type="button"
+            data-testid="world-zoom-out"
+            onClick={() => {
+              const size = rendererRef.current?.viewportSize() ?? { width: 1280, height: 800 };
+              session.zoomAt(
+                { x: size.width / 2, y: size.height / 2 },
+                session.camera.zoom / 1.25,
+                size,
+              );
+            }}
+          >
+            {t('world.zoomOut')}
+          </button>
+          <button
+            type="button"
+            data-testid="world-follow"
+            disabled={selectedId === null}
+            onClick={() => setFollowing((f) => !f)}
+          >
+            {following ? t('world.unfollow') : t('world.follow')}
+          </button>
+        </div>
+      </div>
+      <aside className="world-drawer">
+        <div hidden={tab !== 'home'}>
+          <div className="drawer-section">
+            <h2>{t('world.title')}</h2>
+            <p className="drawer-badge" data-testid="simulator-badge">
+              {t('world.badge')}
+            </p>
+          </div>
+          <div className="drawer-section">
             <label htmlFor="world-preset">{t('world.scenario')}</label>
             <select
               id="world-preset"
@@ -182,95 +247,56 @@ export function WorldPanel({ session: sessionProp }: { session?: WorldSession })
                 </option>
               ))}
             </select>
-            <button
-              type="button"
-              data-testid="world-start"
-              onClick={() => {
-                session.start(preset);
-                setSelectedId(null);
-              }}
-            >
-              {t('world.start')}
-            </button>
-            <button type="button" data-testid="world-reset" onClick={() => session.reset()}>
-              {t('world.reset')}
-            </button>
+            <div className="button-row">
+              <button
+                type="button"
+                data-testid="world-start"
+                onClick={() => {
+                  session.start(preset);
+                  setSelectedId(null);
+                }}
+              >
+                {t('world.start')}
+              </button>
+              <button type="button" data-testid="world-reset" onClick={() => session.reset()}>
+                {t('world.reset')}
+              </button>
+            </div>
           </div>
-          <div>
-            <button
-              type="button"
-              data-testid="world-overview"
-              onClick={() => {
-                const size = rendererRef.current?.viewportSize();
-                if (size !== undefined) session.frameShip(size);
-                else session.frameShip();
-              }}
-            >
-              {t('world.overview')}
-            </button>
-            <button
-              type="button"
-              data-testid="world-zoom-in"
-              onClick={() => {
-                const size = rendererRef.current?.viewportSize() ?? { width: 1280, height: 800 };
-                session.zoomAt(
-                  { x: size.width / 2, y: size.height / 2 },
-                  session.camera.zoom * 1.25,
-                  size,
-                );
-              }}
-            >
-              {t('world.zoomIn')}
-            </button>
-            <button
-              type="button"
-              data-testid="world-zoom-out"
-              onClick={() => {
-                const size = rendererRef.current?.viewportSize() ?? { width: 1280, height: 800 };
-                session.zoomAt(
-                  { x: size.width / 2, y: size.height / 2 },
-                  session.camera.zoom / 1.25,
-                  size,
-                );
-              }}
-            >
-              {t('world.zoomOut')}
-            </button>
-            <button
-              type="button"
-              data-testid="world-follow"
-              disabled={selectedId === null}
-              onClick={() => setFollowing((f) => !f)}
-            >
-              {following ? t('world.unfollow') : t('world.follow')}
-            </button>
-          </div>
-          <WorldRoster panel={panel} selectedId={selectedId} onSelect={setSelectedId} />
+          <WorldPerf tick={poll.tick} sessionCount={poll.sessionCount} perf={perf} />
+        </div>
+        <div hidden={tab !== 'agents'}>
+          <WorldRoster poll={poll} selectedId={selectedId} onSelect={setSelectedId} />
           <WorldSelection session={session} selectedId={selectedId} />
-          <WorldPerf panel={panel} />
-        </aside>
-      </div>
+        </div>
+        <div hidden={tab !== 'tasks'}>
+          <WorldTasks poll={poll} />
+        </div>
+        <div hidden={tab !== 'settings'}>
+          <WorldSettings locale={locale} onLocaleChange={onLocaleChange} />
+        </div>
+      </aside>
     </section>
   );
 }
 
 function WorldRoster({
-  panel,
+  poll,
   selectedId,
   onSelect,
 }: {
-  panel: PanelState;
+  poll: ReturnType<typeof useSessionPoll>;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
 }) {
   const t = useT();
   return (
-    <div>
+    <div className="drawer-section">
       <h3>
-        {t('world.characters')} ({panel.agentCount})
+        {t('world.characters')} ({poll.agentCount})
       </h3>
       <ul data-testid="world-agents">
-        {panel.agents.map((agent) => (
+        {poll.agents.map((agent) => (
           <li key={agent.worldId}>
             <button
               type="button"
@@ -297,16 +323,27 @@ function WorldSelection({
   selectedId: string | null;
 }) {
   const t = useT();
-  if (selectedId === null) return <p data-testid="world-selection">{t('world.noSelection')}</p>;
+  if (selectedId === null)
+    return (
+      <div className="drawer-section">
+        <h3>{t('world.selected')}</h3>
+        <p data-testid="world-selection">{t('world.noSelection')}</p>
+      </div>
+    );
   const snap = session.snapshot();
   const info = snap.presentation.get(selectedId);
   const trace = snap.traces.get(selectedId);
   if (info === undefined || trace === undefined)
-    return <p data-testid="world-selection">{t('world.noSelection')}</p>;
+    return (
+      <div className="drawer-section">
+        <h3>{t('world.selected')}</h3>
+        <p data-testid="world-selection">{t('world.noSelection')}</p>
+      </div>
+    );
   const rerouted =
     trace.destinationStationId !== null && trace.destinationStationId !== trace.stationInstanceId;
   return (
-    <div data-testid="world-selection">
+    <div className="drawer-section" data-testid="world-selection">
       <h3>{info.label}</h3>
       <dl>
         <div>
@@ -347,33 +384,110 @@ function WorldSelection({
   );
 }
 
-function WorldPerf({ panel }: { panel: PanelState }) {
+function WorldTasks({ poll }: { poll: ReturnType<typeof useSessionPoll> }) {
   const t = useT();
   return (
-    <div data-testid="world-perf">
+    <div className="drawer-section" data-testid="world-tasks">
+      <h3>{t('tasks.title')}</h3>
+      <p>
+        {t('world.sessions')}: {poll.sessionCount} · {t('world.tick')}: {poll.tick}
+      </p>
+      {poll.recent.length === 0 ? (
+        <p>{t('tasks.empty')}</p>
+      ) : (
+        <>
+          <h4>{t('tasks.recent')}</h4>
+          <ol data-testid="world-recent">
+            {poll.recent.map((event) => (
+              <li key={event.eventId}>
+                {event.activity} · {event.ruleId ?? '—'} · {event.roomType} → {event.stationType}
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+    </div>
+  );
+}
+
+function WorldSettings({
+  locale,
+  onLocaleChange,
+}: {
+  locale: AppLocale | undefined;
+  onLocaleChange: ((locale: AppLocale) => void) | undefined;
+}) {
+  const t = useT();
+  return (
+    <div className="drawer-section">
+      <h3>{t('settings.title')}</h3>
+      <h4>{t('settings.language')}</h4>
+      <p>{t('settings.languageHint')}</p>
+      {onLocaleChange === undefined ? (
+        <p>{locale ?? 'en'}</p>
+      ) : (
+        <div className="button-row">
+          <button
+            type="button"
+            data-testid="world-lang-en"
+            aria-pressed={locale === 'en'}
+            onClick={() => onLocaleChange('en')}
+          >
+            English
+          </button>
+          <button
+            type="button"
+            data-testid="world-lang-es"
+            aria-pressed={locale === 'es'}
+            onClick={() => onLocaleChange('es')}
+          >
+            Español
+          </button>
+        </div>
+      )}
+      <h4>{t('settings.renderer')}</h4>
+      <p>{t('settings.rendererValue')}</p>
+      <h4>{t('settings.about')}</h4>
+      <p>{t('settings.aboutText')}</p>
+    </div>
+  );
+}
+
+function WorldPerf({
+  tick,
+  sessionCount,
+  perf,
+}: {
+  tick: number;
+  sessionCount: number;
+  perf: { fps: number; p50: number; p95: number } | null;
+}) {
+  const t = useT();
+  return (
+    <div className="drawer-section" data-testid="world-perf">
       <h3>{t('world.perf')}</h3>
       <dl>
         <div>
           <dt>{t('world.tick')}</dt>
-          <dd>{panel.tick}</dd>
+          <dd>{tick}</dd>
         </div>
         <div>
           <dt>{t('world.sessions')}</dt>
-          <dd>{panel.sessionCount}</dd>
+          <dd>{sessionCount}</dd>
         </div>
-        {panel.perf !== null ? (
+        {perf !== null ? (
           <>
             <div>
               <dt>{t('world.fps')}</dt>
-              <dd>{panel.perf.fps.toFixed(0)}</dd>
+              <dd>{perf.fps.toFixed(0)}</dd>
             </div>
             <div>
               <dt>{t('world.p50')}</dt>
-              <dd>{panel.perf.p50.toFixed(2)} ms</dd>
+              <dd>{perf.p50.toFixed(2)} ms</dd>
             </div>
             <div>
               <dt>{t('world.p95')}</dt>
-              <dd>{panel.perf.p95.toFixed(2)} ms</dd>
+              <dd>{perf.p95.toFixed(2)} ms</dd>
             </div>
           </>
         ) : null}

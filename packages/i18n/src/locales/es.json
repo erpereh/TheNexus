@@ -14,10 +14,55 @@
     "panelLabel": "Panel del simulador de harness",
     "subagentOf": "subagente de {{agentId}}"
   },
+  "nav": {
+    "home": "Inicio",
+    "agents": "Agentes",
+    "tasks": "Tareas",
+    "settings": "Ajustes",
+    "projects": "PROYECTOS",
+    "house": "Casa TheNexus"
+  },
+  "topbar": {
+    "projectActive": "Proyecto activo",
+    "projectIdle": "Listo",
+    "tagline": "Pequeños agentes. Grandes avances."
+  },
+  "status": {
+    "local": "Local · Simulador",
+    "role": "Constructor",
+    "workspace": "Espacio local"
+  },
+  "rooms": {
+    "planning": { "title": "Sala de planes", "subtitle": "Ideas → Planes" },
+    "development": { "title": "Sala de código", "subtitle": "Código → Crear" },
+    "research": { "title": "Sala de estudio", "subtitle": "Explorar → Aprender" },
+    "library": { "title": "Biblioteca", "subtitle": "Leer → Descubrir" },
+    "testing": { "title": "Sala de pruebas", "subtitle": "Probar → Mejorar" },
+    "communications": { "title": "Comunicaciones", "subtitle": "Hablar → Coordinar" },
+    "archive": { "title": "Archivo", "subtitle": "Guardar → Recordar" },
+    "lounge": { "title": "Descanso", "subtitle": "Descansar → Recargar" }
+  },
+  "tasks": {
+    "title": "Tareas y cronología",
+    "empty": "Inicia un escenario para ver actividad de agentes en vivo.",
+    "recent": "Actividad reciente",
+    "event": "Evento",
+    "where": "Sala → Estación"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "language": "Idioma",
+    "languageHint": "Se aplica a la interfaz y a las etiquetas de las salas.",
+    "renderer": "Renderizador",
+    "rendererValue": "PixiJS · cenital 2D estricto · determinista",
+    "about": "Acerca de",
+    "aboutText": "Cada personaje es un agente simulado que vive en la casa del proyecto. Todos los datos de esta pantalla provienen del simulador determinista local — no se toca ningún proveedor real."
+  },
   "world": {
-    "title": "Mundo demo",
+    "title": "Casa del proyecto",
     "badge": "DATOS SIMULADOS — mundo determinista en vivo",
-    "panelLabel": "Panel del mundo demo determinista",
+    "badgeShort": "DATOS SIMULADOS",
+    "panelLabel": "Panel determinista de la casa del proyecto",
     "scenario": "Escenario",
     "start": "Iniciar",
     "reset": "Reiniciar",
@@ -39,6 +84,9 @@
     "perf": "Rendimiento",
     "fps": "FPS",
     "p50": "Fotograma p50",
-    "p95": "Fotograma p95"
+    "p95": "Fotograma p95",
+    "selected": "Agente seleccionado",
+    "camera": "Cámara",
+    "details": "Detalles"
   }
 }

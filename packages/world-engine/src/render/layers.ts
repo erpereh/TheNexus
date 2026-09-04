@@ -1,10 +1,10 @@
 import { Container } from 'pixi.js';
 
 /**
- * Ordered scene layers for the isometric world. Paint order back-to-front:
- * background (screen-space starfield) → world (iso entities, depth-sorted
- * via `zIndex = depthKeyOf(...)` with `sortableChildren`) → hud
- * (screen-space selection/perf overlays).
+ * Ordered scene layers for the top-down house world. Paint order
+ * back-to-front: background (screen-space garden frame) → world (house
+ * entities, depth-sorted via `zIndex = depthKeyOf(...)` with
+ * `sortableChildren`) → hud (screen-space selection/perf overlays).
  *
  * The 8 semantic `DEPTH_LAYERS` biases live inside the z-order keys; these
  * three pixi containers are the only structural layers, keeping reordering

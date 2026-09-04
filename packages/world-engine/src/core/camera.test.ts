@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Camera, ZOOM_MAX, ZOOM_MIN } from './camera';
-import { gridToScreen, screenToWorld, worldToScreen, type GridPoint } from './iso';
+import { screenToWorldTop, tileToScreen, worldToScreenTop } from './ortho';
+import type { GridPoint } from './iso';
 
 const viewport = { width: 800, height: 600 };
 
@@ -12,7 +13,7 @@ function screenBounds(rect: { x: number; y: number; width: number; height: numbe
     { x: rect.x, y: rect.y + rect.height },
     { x: rect.x + rect.width, y: rect.y + rect.height },
   ];
-  const points = corners.map((c) => worldToScreen(c, cam, viewport));
+  const points = corners.map((c) => worldToScreenTop(c, cam, viewport));
   return {
     minX: Math.min(...points.map((p) => p.x)),
     maxX: Math.max(...points.map((p) => p.x)),
@@ -24,10 +25,10 @@ function screenBounds(rect: { x: number; y: number; width: number; height: numbe
 describe('Camera', () => {
   it('zoomAt anchors the world point under the cursor', () => {
     const cam = new Camera({ x: 10, y: 10 }, 1);
-    const cursor = worldToScreen({ x: 10.5, y: 10.25 }, cam, viewport);
+    const cursor = worldToScreenTop({ x: 10.5, y: 10.25 }, cam, viewport);
     cam.zoomAt(cursor, 2, viewport);
     expect(cam.zoom).toBe(2);
-    const world = screenToWorld(cursor, cam, viewport);
+    const world = screenToWorldTop(cursor, cam, viewport);
     expect(world.x).toBeCloseTo(10.5, 9);
     expect(world.y).toBeCloseTo(10.25, 9);
   });
@@ -42,7 +43,7 @@ describe('Camera', () => {
     expect(cam.zoom).toBe(ZOOM_MIN);
   });
 
-  it('panning can never push the ship fully off-screen', () => {
+  it('panning can never push the house fully off-screen', () => {
     const bounds = { x: 0, y: 0, width: 10, height: 10 };
     const assertShipVisible = (cam: Camera) => {
       const b = screenBounds(bounds, cam);
@@ -93,11 +94,13 @@ describe('Camera', () => {
     }
     const cam = new Camera({ x: 0, y: 0 }, 1);
     cam.frameCells(cells, viewport);
-    expect(cam.zoom).toBeCloseTo(2.5, 9);
+    // Top-down bbox of corner points: 7×3 cells → 224×96px at zoom 1;
+    // min(800/224, 600/96) = 3.57 clamps to ZOOM_MAX.
+    expect(cam.zoom).toBe(ZOOM_MAX);
     expect(cam.center.x).toBeCloseTo(5.5, 9);
     expect(cam.center.y).toBeCloseTo(3.5, 9);
     for (const cell of cells) {
-      const s = worldToScreen(cell, cam, viewport);
+      const s = worldToScreenTop(cell, cam, viewport);
       expect(s.x).toBeGreaterThanOrEqual(-0.001);
       expect(s.x).toBeLessThanOrEqual(viewport.width + 0.001);
       expect(s.y).toBeGreaterThanOrEqual(-0.001);
@@ -125,7 +128,7 @@ describe('Camera', () => {
 });
 
 describe('camera helpers', () => {
-  it('gridToScreen stays available for ship bounds math', () => {
-    expect(gridToScreen(1, 0)).toEqual({ x: 32, y: 16 });
+  it('tileToScreen stays available for house bounds math', () => {
+    expect(tileToScreen(1, 0)).toEqual({ x: 32, y: 0 });
   });
 });

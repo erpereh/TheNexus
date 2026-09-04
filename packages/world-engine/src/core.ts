@@ -19,6 +19,15 @@ export {
 } from './core/iso';
 export { TileGrid, type Cell, type GridRect } from './core/grid';
 export {
+  TOP_TILE_PX,
+  tileToScreen,
+  screenToTile,
+  worldToScreenTop,
+  screenToWorldTop,
+  cellRectPx,
+  cellCenterTop,
+} from './core/ortho';
+export {
   createCharacter,
   facingFromDelta,
   pathRemaining,
@@ -91,6 +100,8 @@ export { PerfMonitor, RingBuffer, percentile, type PerfMark } from './core/perf'
 export { cssToHex, roomPalette, stationPalette, themeColor } from './core/theme-colors';
 export type {
   CharacterPresentation,
+  HouseGardenView,
+  HousePropView,
   ShipLayoutView,
   ShipRoomView,
   ShipStationView,

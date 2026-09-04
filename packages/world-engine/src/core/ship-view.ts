@@ -19,6 +19,13 @@ export interface ShipRoomView {
   tint: number;
   /** Accent tint as 0xRRGGBB for borders/runes/glyphs. */
   accent: number;
+  /**
+   * Human-readable room label for the top-down house renderer (e.g.
+   * "Planning Room" / "Ideas → Plans"). Optional: the renderer falls back
+   * to the room type, and the desktop shell may override per locale through
+   * `WorldRenderer.setRoomLabels`.
+   */
+  label?: { title: string; subtitle: string };
 }
 
 /** One interactive station with its blocked footprint and approach anchor. */
@@ -42,6 +49,44 @@ export interface ShipLayoutView {
   gridHeight: number;
   /** Union bounds of all rooms; drives camera framing/clamping. */
   bounds: GridRect;
+  /**
+   * Extra wood-floor rects (hallways, corridors) that are walkable but
+   * belong to no room. Optional: the renderer draws room floors otherwise.
+   */
+  floors?: GridRect[];
+  /**
+   * Japanese garden dressing around a Project House (pond, trees, stone
+   * lanterns). Optional: renderers ignore it when absent, and every garden
+   * cell is blocked (or an explicit walkable path) so navigation and spawn
+   * selection never disagree with what is drawn.
+   */
+  garden?: HouseGardenView;
+  /**
+   * Blocked decorative furniture cells (plants, shelves, lamps, chests).
+   * Optional: blocked in the grid, excluded from spawns, drawn as
+   * furniture instead of wall bands so characters never clip through them.
+   */
+  props?: readonly HousePropView[];
+}
+
+/** One blocked decorative furniture cell inside a room. */
+export interface HousePropView {
+  cell: Cell;
+  kind: 'plant' | 'shelf' | 'lamp' | 'chest';
+}
+
+/** World-space garden dressing for a Project House (all cells blocked). */
+export interface HouseGardenView {
+  /** Still-water pond rect (blocked cells, drawn as water). */
+  pond: GridRect;
+  /** Canopy anchor cells (blocked): flowering trees. */
+  trees: readonly Cell[];
+  /** Stone lantern cells (blocked, warm glow at render time). */
+  lanterns: readonly Cell[];
+  /** Walkable stone-path area (e.g. entrance walk); drawn as stepping stones. */
+  path?: GridRect;
+  /** Wooden entrance deck (genkan) drawn under the south threshold. */
+  deck?: GridRect;
 }
 
 /** Per-character presentation joined to `WorldSnapshot` by character id. */

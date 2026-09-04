@@ -270,4 +270,22 @@ describe('WorldSession deterministic pipeline', () => {
     expect(snap.world.characters).toHaveLength(100);
     session.dispose();
   }, 30000);
+
+  it('re-frames restarts with the last live viewport, not the placeholder', () => {
+    const live = { width: 788, height: 787 };
+    const session = new WorldSession({ roster: roster(12) });
+    session.start('single-agent');
+    session.frameShip(live);
+    const zoom = session.camera.zoom;
+    const center = { ...session.camera.center };
+    session.start('single-agent');
+    expect(session.camera.zoom).toBe(zoom);
+    expect(session.camera.center).toEqual(center);
+    // The live stage framing differs from the 1280x800 placeholder framing.
+    const fresh = new WorldSession({ roster: roster(12) });
+    fresh.start('single-agent');
+    expect(fresh.camera.zoom).not.toBe(zoom);
+    session.dispose();
+    fresh.dispose();
+  });
 });

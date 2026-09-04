@@ -14,10 +14,55 @@
     "panelLabel": "Harness simulator panel",
     "subagentOf": "subagent of {{agentId}}"
   },
+  "nav": {
+    "home": "Home",
+    "agents": "Agents",
+    "tasks": "Tasks",
+    "settings": "Settings",
+    "projects": "PROJECTS",
+    "house": "TheNexus House"
+  },
+  "topbar": {
+    "projectActive": "Project Active",
+    "projectIdle": "Ready",
+    "tagline": "Small Agents. Big Progress."
+  },
+  "status": {
+    "local": "Local-first · Simulator",
+    "role": "Builder",
+    "workspace": "Local workspace"
+  },
+  "rooms": {
+    "planning": { "title": "Planning Room", "subtitle": "Ideas → Plans" },
+    "development": { "title": "Development Room", "subtitle": "Code → Create" },
+    "research": { "title": "Research Room", "subtitle": "Explore → Learn" },
+    "library": { "title": "Library", "subtitle": "Read → Discover" },
+    "testing": { "title": "Testing Room", "subtitle": "Test → Improve" },
+    "communications": { "title": "Communications Room", "subtitle": "Talk → Coordinate" },
+    "archive": { "title": "Archive Room", "subtitle": "Store → Remember" },
+    "lounge": { "title": "Lounge", "subtitle": "Rest → Recharge" }
+  },
+  "tasks": {
+    "title": "Tasks & Timeline",
+    "empty": "Start a scenario to see live agent activity.",
+    "recent": "Recent activity",
+    "event": "Event",
+    "where": "Room → Station"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "languageHint": "Applies to the app shell and the in-world room labels.",
+    "renderer": "Renderer",
+    "rendererValue": "PixiJS · strict top-down 2D · deterministic",
+    "about": "About",
+    "aboutText": "Every character is a simulated agent living in the project house. All data on this screen comes from the local deterministic simulator — no real providers are touched."
+  },
   "world": {
-    "title": "Demo World",
+    "title": "Project House",
     "badge": "SIMULATOR DATA — live deterministic world",
-    "panelLabel": "Deterministic demo world panel",
+    "badgeShort": "SIMULATOR DATA",
+    "panelLabel": "Deterministic project house panel",
     "scenario": "Scenario",
     "start": "Start",
     "reset": "Reset",
@@ -39,6 +84,9 @@
     "perf": "Performance",
     "fps": "FPS",
     "p50": "Frame p50",
-    "p95": "Frame p95"
+    "p95": "Frame p95",
+    "selected": "Selected agent",
+    "camera": "Camera",
+    "details": "Details"
   }
 }

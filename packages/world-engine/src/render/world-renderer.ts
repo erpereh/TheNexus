@@ -8,14 +8,15 @@ import { createThemeRuntime, type ThemeRuntime } from '@thenexus/asset-system';
 import { DEFAULT_THEME } from '@thenexus/asset-system';
 import { AnimationStateMachine } from '../core/animation-state';
 import { resolveSlotForIntent, slotForActivity } from '../core/activity-map';
-import { gridToScreen, screenToWorld, type CameraView, type Viewport } from '../core/iso';
+import type { CameraView, Viewport } from '../core/iso';
+import { TOP_TILE_PX, screenToWorldTop, tileToScreen } from '../core/ortho';
 import { PerfMonitor } from '../core/perf';
 import type { Cell } from '../core/grid';
 import type { WorldSnapshot } from '../core/world-sim';
 import { Background } from './background';
 import { createWorldLayers, type WorldLayers } from './layers';
 import { ensureCullerRegistered } from './culling';
-import { bakeShipStructure } from './room-graphics';
+import { bakeShipStructure, layoutLabel, type RoomLabelNode } from './room-graphics';
 import { buildStation, type StationNode } from './station-graphics';
 import {
   accentForId,
@@ -26,16 +27,19 @@ import {
 import type { CharacterPresentation, ShipLayoutView } from '../core/ship-view';
 
 /**
- * PixiJS v8 world renderer. Owns the Application lifecycle, ordered layers,
- * camera transform, character pooling/smoothing, per-character animation
- * state machines, station idle motion, viewport culling, hidden-window
- * render suspension and dev perf instrumentation.
+ * PixiJS v8 top-down Project House renderer. Owns the Application
+ * lifecycle, ordered layers, orthographic camera transform, character
+ * pooling/smoothing, per-character animation state machines, station idle
+ * motion, viewport culling, hidden-window render suspension and dev perf
+ * instrumentation.
  *
- * Data flow per tick (driven by the host through `onTick`, which advances
- * the session and calls `setFrame`): smooth character positions toward the
- * latest snapshot cells, advance animation machines, refresh depth keys,
- * pump station effects. The simulation itself stays authoritative and
- * discrete; all smoothing here is presentation-only.
+ * World X maps to screen X and world Y to screen Y (strict top-down 2D);
+ * rectangular rooms stay rectangular. Data flow per tick (driven by the
+ * host through `onTick`, which advances the session and calls `setFrame`):
+ * smooth character positions toward the latest snapshot cells, advance
+ * animation machines, refresh depth keys, pump station effects. The
+ * simulation itself stays authoritative and discrete; all smoothing here is
+ * presentation-only.
  */
 
 export interface RendererOptions {
@@ -82,6 +86,8 @@ export class WorldRenderer {
   private readonly perf = new PerfMonitor(180);
   private readonly characters = new Map<string, TrackedCharacter>();
   private readonly stations: StationNode[] = [];
+  private labelNodes: RoomLabelNode[] = [];
+  private labelOverrides: Readonly<Record<string, { title: string; subtitle: string }>> = {};
   private readonly opts: RendererOptions;
 
   private layout: ShipLayoutView | null = null;
@@ -144,15 +150,15 @@ export class WorldRenderer {
   pick(sx: number, sy: number): string | null {
     this.assertLive();
     if (this.snapshot === null) return null;
-    const world = screenToWorld({ x: sx, y: sy }, this.camera, this.viewport);
+    const world = screenToWorldTop({ x: sx, y: sy }, this.camera, this.viewport);
     let best: string | null = null;
     let bestDist = Number.POSITIVE_INFINITY;
-    const pickRadius = PICK_RADIUS_PX / 32 / Math.max(0.01, this.camera.zoom);
+    const pickRadius = PICK_RADIUS_PX / TOP_TILE_PX / Math.max(0.01, this.camera.zoom);
     for (const character of this.snapshot.characters) {
       const tracked = this.characters.get(character.id);
       const pos = tracked !== undefined && tracked.initialized ? tracked.shown : character.cell;
-      const dx = pos.x - world.x;
-      const dy = pos.y - world.y;
+      const dx = pos.x + 0.5 - world.x;
+      const dy = pos.y + 0.5 - world.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist <= pickRadius && dist < bestDist) {
         best = character.id;
@@ -169,13 +175,36 @@ export class WorldRenderer {
     for (const tracked of this.characters.values()) tracked.node.destroy();
     this.characters.clear();
     this.stations.length = 0;
+    this.labelNodes = [];
     this.layout = layout;
     const baked = bakeShipStructure(layout);
     this.layers.world.addChild(baked.container);
+    this.labelNodes = baked.labels;
+    this.applyLabelOverrides();
     for (const station of layout.stations) {
       const node = buildStation(station);
       this.stations.push(node);
       this.layers.world.addChild(node.container);
+    }
+  }
+
+  /**
+   * Localized room-label overrides (desktop passes i18n strings; the baked
+   * English defaults from the house spec apply otherwise). Cheap: only
+   * touched `Text` nodes are re-laid-out.
+   */
+  setRoomLabels(labels: Readonly<Record<string, { title: string; subtitle: string }>>): void {
+    this.assertLive();
+    this.labelOverrides = labels;
+    this.applyLabelOverrides();
+  }
+
+  private applyLabelOverrides(): void {
+    for (const node of this.labelNodes) {
+      const override = this.labelOverrides[node.roomInstanceId];
+      if (override !== undefined) {
+        layoutLabel(node.roomInstanceId, node, override.title, override.subtitle);
+      }
     }
   }
 
@@ -260,7 +289,7 @@ export class WorldRenderer {
   }
 
   private updateCameraTransform(): void {
-    const cam = gridToScreen(this.camera.center.x, this.camera.center.y);
+    const cam = tileToScreen(this.camera.center.x, this.camera.center.y);
     const zoom = this.camera.zoom;
     this.layers.world.position.set(
       -cam.x * zoom + this.viewport.width / 2,
@@ -307,7 +336,7 @@ export class WorldRenderer {
           y: tracked.shown.y + (target.y - tracked.shown.y) * rate,
         };
       }
-      const feet = gridToScreen(tracked.shown.x + 0.5, tracked.shown.y + 0.5);
+      const feet = tileToScreen(tracked.shown.x + 0.5, tracked.shown.y + 0.5);
       tracked.node.setFeet(feet.x, feet.y);
       const depthCell: Cell = {
         x: Math.floor(tracked.shown.x + 0.5),
@@ -336,6 +365,7 @@ export class WorldRenderer {
           selected: this.selectedId === character.id,
           accent: tracked.accent,
           isGuest: info?.isGuest ?? false,
+          facing: character.facing,
         },
         this.timeMs,
       );

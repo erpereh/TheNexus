@@ -8,6 +8,8 @@ interface WorldCanvasProps {
   onSelect: (worldId: string | null) => void;
   /** Shared handle so the panel can poll perf without re-rendering the canvas. */
   rendererRef: MutableRefObject<WorldRenderer | null>;
+  /** Localized room labels applied to the baked floor pills. */
+  roomLabels: Readonly<Record<string, { title: string; subtitle: string }>>;
 }
 
 function viewportOf(canvas: HTMLCanvasElement): { width: number; height: number } {
@@ -18,22 +20,56 @@ function viewportOf(canvas: HTMLCanvasElement): { width: number; height: number 
 }
 
 /**
+ * Pixi's `renderer.resize()` stamps explicit `style.width/height` on the
+ * canvas, which would freeze it at the old size and leave void bands after
+ * a window resize. The canvas must stay CSS-driven (`inset: 0` of the
+ * stage), so every renderer resize is followed by restoring fluid styles.
+ */
+function resizeRenderer(
+  renderer: WorldRenderer | null,
+  canvas: HTMLCanvasElement,
+  last: { width: number; height: number },
+): { width: number; height: number } {
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+  const size = viewportOf(canvas);
+  // No-op on identical sizes: Pixi restamps inline styles on every call,
+  // which would otherwise ping-pong the ResizeObserver forever.
+  if (size.width !== last.width || size.height !== last.height) {
+    last.width = size.width;
+    last.height = size.height;
+    renderer?.resize(size);
+  }
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+  return size;
+}
+
+/**
  * PixiJS world viewport. Owns the `WorldRenderer` lifecycle (async create,
  * ResizeObserver resizing, StrictMode-safe destroy) and all pointer input:
  * drag to pan, wheel to zoom, click (without drag) to select a character.
  * Simulation stepping happens in the renderer's tick via `onTick`; React
  * state is never updated at frame rate.
  */
-export function WorldCanvas({ session, selectedId, onSelect, rendererRef }: WorldCanvasProps) {
+export function WorldCanvas({
+  session,
+  selectedId,
+  onSelect,
+  rendererRef,
+  roomLabels,
+}: WorldCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sessionRef = useRef(session);
   const selectRef = useRef(onSelect);
+  const labelsRef = useRef(roomLabels);
   const [error, setError] = useState<string | null>(null);
 
   // The renderer lifecycle is mount-only; props flow in through refs.
   useEffect(() => {
     sessionRef.current = session;
     selectRef.current = onSelect;
+    labelsRef.current = roomLabels;
   });
 
   useEffect(() => {
@@ -41,6 +77,7 @@ export function WorldCanvas({ session, selectedId, onSelect, rendererRef }: Worl
     if (canvas === null) return;
     let cancelled = false;
     let renderer: WorldRenderer | null = null;
+    const lastResize = { width: 0, height: 0 };
     WorldRenderer.create(canvas, {
       theme: sessionRef.current.theme,
       onTick: (dtMs: number) => {
@@ -61,7 +98,12 @@ export function WorldCanvas({ session, selectedId, onSelect, rendererRef }: Worl
         renderer = created;
         rendererRef.current = created;
         created.setLayout(sessionRef.current.ship.shipView);
-        created.resize(viewportOf(canvas));
+        created.setRoomLabels(labelsRef.current);
+        // Initial fit: the session constructor framed for a placeholder
+        // viewport, so fit once to the real stage (never on resize, which
+        // must preserve the user's pan/zoom).
+        sessionRef.current.frameShip(viewportOf(canvas));
+        resizeRenderer(created, canvas, { width: 0, height: 0 });
       })
       .catch((unknownError: unknown) => {
         if (!cancelled) {
@@ -69,13 +111,13 @@ export function WorldCanvas({ session, selectedId, onSelect, rendererRef }: Worl
         }
       });
     const handleWindowResize = (): void => {
-      if (renderer !== null) renderer.resize(viewportOf(canvas));
+      if (renderer !== null) resizeRenderer(renderer, canvas, lastResize);
     };
     const resizeObserver =
       typeof ResizeObserver === 'undefined'
         ? null
         : new ResizeObserver(() => {
-            if (renderer !== null) renderer.resize(viewportOf(canvas));
+            if (renderer !== null) resizeRenderer(renderer, canvas, lastResize);
           });
     if (resizeObserver !== null) {
       resizeObserver.observe(canvas);
@@ -98,6 +140,10 @@ export function WorldCanvas({ session, selectedId, onSelect, rendererRef }: Worl
   useEffect(() => {
     rendererRef.current?.setSelected(selectedId);
   }, [rendererRef, selectedId]);
+
+  useEffect(() => {
+    rendererRef.current?.setRoomLabels(roomLabels);
+  }, [rendererRef, roomLabels]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
