@@ -1,0 +1,17 @@
+{
+  "app": {
+    "title": "TheNexus"
+  },
+  "simulator": {
+    "badge": "SIMULATOR DATA — not real agent activity",
+    "title": "Harness Simulator",
+    "workspace": "Workspace",
+    "sessions": "Sessions",
+    "agents": "Agents",
+    "runs": "Runs",
+    "start": "Start",
+    "reset": "Reset",
+    "panelLabel": "Harness simulator panel",
+    "subagentOf": "subagent of {{agentId}}"
+  }
+}

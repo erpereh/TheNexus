@@ -13,45 +13,45 @@ This checklist is the progress contract for long-running autonomous implementati
 
 ## A. Repository and engineering foundation
 
-- [ ] pnpm workspace exists and installs deterministically from lockfile.
-- [ ] Tauri + React + TypeScript desktop application starts on Windows.
-- [ ] TypeScript strict mode is enabled for application/packages.
-- [ ] Formatting, linting, typecheck, unit-test and build commands exist at repository root.
+- [x] pnpm workspace exists and installs deterministically from lockfile.
+- [x] Tauri + React + TypeScript desktop application starts on Windows.
+- [x] TypeScript strict mode is enabled for application/packages.
+- [x] Formatting, linting, typecheck, unit-test and build commands exist at repository root.
 - [ ] CI runs the non-GUI verification suite without provider credentials.
 - [ ] Package boundaries documented in the design are represented in the workspace.
-- [ ] No production secret/API key is committed.
+- [x] No production secret/API key is committed.
 
 ## B. Canonical contracts
 
-- [ ] Versioned normalized event schema exists with runtime validation.
-- [ ] Event fixtures cover valid, invalid, unknown and forward-compatible cases.
-- [ ] Capability schema exists for harness adapters.
-- [ ] Semantic activity taxonomy exists and is independent from themes/providers.
+- [x] Versioned normalized event schema exists with runtime validation.
+- [x] Event fixtures cover valid, invalid, unknown and forward-compatible cases.
+- [x] Capability schema exists for harness adapters.
+- [x] Semantic activity taxonomy exists and is independent from themes/providers.
 - [ ] Workspace, crew, assignment, room, station, theme, character-pack and recording domain types exist.
-- [ ] Contract tests demonstrate deterministic serialization/deserialization.
+- [x] Contract tests demonstrate deterministic serialization/deserialization.
 
 ## C. Harness Simulator and local Bridge
 
-- [ ] Deterministic Harness Simulator can create sessions, agents and subagents.
-- [ ] Simulator covers planning, reading, coding, research, testing, build, review, git, waiting, error and completion activity.
-- [ ] Simulator supports malformed/unknown events without crashing the app.
-- [ ] Scenarios for 10, 50, 100 and 250 synthetic agents exist.
-- [ ] Local Bridge accepts provider-neutral adapter events and publishes normalized events.
-- [ ] Backpressure/high-volume behavior is tested.
+- [x] Deterministic Harness Simulator can create sessions, agents and subagents.
+- [x] Simulator covers planning, reading, coding, research, testing, build, review, git, waiting, error and completion activity.
+- [x] Simulator supports malformed/unknown events without crashing the app.
+- [x] Scenarios for 10, 50, 100 and 250 synthetic agents exist.
+- [x] Local Bridge accepts provider-neutral adapter events and publishes normalized events.
+- [x] Backpressure/high-volume behavior is tested.
 - [ ] Simulator is the default onboarding/demo data source.
 
 ## D. Persistence, privacy and replay
 
-- [ ] SQLite persistence is implemented with versioned migrations.
-- [ ] Migrations are tested from a clean DB and at least one previous schema fixture.
-- [ ] Authorized workspace paths are stored explicitly; whole-PC scanning is not performed.
-- [ ] Raw-content storage is opt-in.
-- [ ] Basic secret-redaction pipeline exists and is tested.
-- [ ] Record/replay stores normalized sessions locally.
-- [ ] Replay supports pause/resume, stepping and 1x/2x/5x/10x/50x.
-- [ ] Replay ordering is deterministic.
-- [ ] Retention/pinning behavior is configurable and tested.
-- [ ] Corrupt/unsupported recording imports fail safely with useful errors.
+- [x] SQLite persistence is implemented with versioned migrations.
+- [x] Migrations are tested from a clean DB and at least one previous schema fixture.
+- [x] Authorized workspace paths are stored explicitly; whole-PC scanning is not performed.
+- [x] Raw-content storage is opt-in.
+- [x] Basic secret-redaction pipeline exists and is tested.
+- [x] Record/replay stores normalized sessions locally.
+- [x] Replay supports pause/resume, stepping and 1x/2x/5x/10x/50x.
+- [x] Replay ordering is deterministic.
+- [x] Retention/pinning behavior is configurable and tested.
+- [x] Corrupt/unsupported recording imports fail safely with useful errors.
 
 ## E. PixiJS World Engine
 
@@ -126,8 +126,8 @@ This checklist is the progress contract for long-running autonomous implementati
 ## K. Themes, assets and Character Packs
 
 - [ ] Official default theme implements the anime space-fantasy art direction.
-- [ ] Theme presentation is decoupled from semantic activity.
-- [ ] At least one theme switch demonstrates the abstraction without changing mappings.
+- [x] Theme presentation is decoupled from semantic activity.
+- [x] At least one theme switch demonstrates the abstraction without changing mappings.
 - [ ] Character Pack manifest/schema exists with NE/NW/SE/SW directions.
 - [ ] Required baseline animation slots are supported.
 - [ ] Asset Studio can import, slice/map frames, adjust anchors/offsets/FPS/looping and preview in simulator.
@@ -138,14 +138,14 @@ This checklist is the progress contract for long-running autonomous implementati
 
 ## L. Adapter SDK and initial adapters
 
-- [ ] Adapter SDK defines lifecycle, event and capability contracts.
-- [ ] Generic Adapter is implemented against fixtures/simulator.
-- [ ] ZCode Adapter compiles and passes contract tests without launching/calling ZCode or a model.
-- [ ] OpenCode Adapter compiles and passes contract tests without launching/calling OpenCode or a model.
-- [ ] Codex Adapter compiles and passes contract tests without launching/calling Codex or a model.
-- [ ] Cursor Adapter compiles and passes contract tests without launching/calling Cursor or a model.
+- [x] Adapter SDK defines lifecycle, event and capability contracts.
+- [x] Generic Adapter is implemented against fixtures/simulator.
+- [x] ZCode Adapter compiles and passes contract tests without launching/calling ZCode or a model.
+- [x] OpenCode Adapter compiles and passes contract tests without launching/calling OpenCode or a model.
+- [x] Codex Adapter compiles and passes contract tests without launching/calling Codex or a model.
+- [x] Cursor Adapter compiles and passes contract tests without launching/calling Cursor or a model.
 - [ ] UI never fabricates unsupported capabilities/data.
-- [ ] Real-provider/manual validation checklist is documented separately and remains unexecuted by autonomous agents.
+- [x] Real-provider/manual validation checklist is documented separately and remains unexecuted by autonomous agents.
 
 ## M. Experimental Command Center
 

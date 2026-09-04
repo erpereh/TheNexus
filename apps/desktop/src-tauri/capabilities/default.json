@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default capability for the main window. Provider-neutral; no filesystem, shell or network permissions are granted to the frontend by default.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

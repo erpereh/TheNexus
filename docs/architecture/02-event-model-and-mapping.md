@@ -60,7 +60,9 @@ Adapters may have richer provider-specific observations internally, but unsuppor
 
 ## Semantic activities
 
-The world maps events into a smaller activity vocabulary. Initial activities:
+The world maps events into a smaller activity vocabulary. The canonical,
+implemented taxonomy lives in `packages/contracts/src/activity.ts`
+(`SemanticActivitySchema`):
 
 ```text
 idle
@@ -71,12 +73,13 @@ researching
 testing
 building
 reviewing
-version_control
+version-control
 communicating
 delegating
-waiting_for_user
+waiting-user
 error
 completed
+spawning-subagent
 ```
 
 Activities may carry intensity/metadata without multiplying the core vocabulary unnecessarily.

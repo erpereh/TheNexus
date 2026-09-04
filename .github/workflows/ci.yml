@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'agent/**']
+  pull_request:
+
+jobs:
+  verify:
+    name: Non-GUI verification suite
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.24.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit and contract tests
+        run: pnpm test
+
+      - name: Rust checks
+        working-directory: apps/desktop/src-tauri
+        run: cargo check --all-targets
+
+      - name: Desktop production build
+        run: pnpm --filter @thenexus/desktop tauri build
+
+  # No provider credentials are used or required by any step above.
+  # Real-provider validation is manual-only and never runs in CI.

@@ -1,0 +1,7 @@
+docs/
+*.md
+pnpm-lock.yaml
+apps/desktop/app-icon.png
+apps/desktop/src-tauri/icons/
+apps/desktop/src-tauri/gen/
+apps/desktop/src-tauri/target/

@@ -1,0 +1,4 @@
+# Rust/Toolchain build outputs
+target/
+# Generated Tauri schemas
+gen/

@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+coverage/
+*.tsbuildinfo
+
+# Rust / Tauri (also nested via apps/desktop/src-tauri/.gitignore)
+**/src-tauri/target/
+**/src-tauri/gen/
+
+# OS artifacts
+Thumbs.db
+Desktop.ini
+
+# Local env (never commit credentials)
+.env
+.env.*
+!.env.example
