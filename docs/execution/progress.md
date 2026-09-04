@@ -316,3 +316,15 @@ Verification (all on `thenexus-desktop` release exe, Windows, Spanish OS locale)
 - Interaction notes: webview exposes no clickable a11y nodes for canvas-space actions, so canvas clicks need coordinates; native `<select>` needs keyboard (type + Enter), `set-value` does not fire React's change. Both handled in verification.
 - Minor UI defect found live: long station instance ids overflow the side panel → fixed with `overflow-wrap: anywhere` (this commit, not yet visually re-verified).
 Open concerns: none blocking; remaining acceptance rows (resize extremes, 50-agent midpoint live, 250 FPS number, EN screenshot) are nice-to-have hardening, not milestone gates.
+
+### Phase J — independent review + fixes
+Commit(s): (this commit)
+Verification:
+- Fresh General subagent reviewed the slice (read-only) against both Phase 4 plans. Findings: 3 Critical, 7 High, 9 Medium, 8 Low. Safety/architecture: no real provider/harness exercised (simulator/mocks only); core files stay pixi/DOM-free (barrel caveat fixed).
+- All 3 Critical fixed: per-frame snapshot history clone + clientWidth reflow removed from the 60Hz path (`snapshot({history:false})`, cached `frameViewport()`); unreachable-station hold now stops the character (single-cell path when moving).
+- All 7 High fixed: layout-swap GPU destroy; `core`/`render` subpath exports with pixi-free view types moved into core (runtime imports `/core`; desktop imports `/render`); 4px drag threshold + pointercancel; live canvas viewport for zoom/overview/`frameShip(viewport)`; `waiting-user` drives pause-bars; `animationIntent` carried in presentation and resolved for playback (`hidden` suppresses ornaments); new WorldPanel RTL tests.
+- Architectural Mediums fixed: stable guest labels from guest.id; spawn-capacity fail-fast; tick-quantized session accumulator + chunking-invariance test (10x100ms identical to 1x1000ms); assertLive on all renderer methods; trim/floor z separation.
+- Deferred (not blocking): wall/character same-row bias (visually OK), event-storm budgeting (p95 0.70ms at 100 agents), history cap (short demo sessions), remaining Lows.
+- Note: animation-state step-3 same-slot fallback deviates from the Phase 4 plan formula; pinned by tests and documented in code — reviewed deviation, not regression.
+- Post-fix gates: format/lint/typecheck/test all PASS (379 tests).
+Open concerns: final fresh tauri build + cargo check after these fixes, then close-out docs.

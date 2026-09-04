@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
-import { WorldRenderer } from '@thenexus/world-engine';
+import { WorldRenderer } from '@thenexus/world-engine/render';
 import type { WorldSession } from '@thenexus/runtime';
 
 interface WorldCanvasProps {
@@ -46,8 +46,11 @@ export function WorldCanvas({ session, selectedId, onSelect, rendererRef }: Worl
       onTick: (dtMs: number) => {
         const live = sessionRef.current;
         live.advance(dtMs);
-        const snap = live.snapshot();
-        renderer?.setFrame(snap.world, snap.presentation, live.camera.view(), viewportOf(canvas));
+        // History excluded: the render path needs world + presentation only,
+        // and history would be cloned pointlessly at 60Hz.
+        const snap = live.snapshot({ history: false });
+        const size = renderer?.frameViewport() ?? viewportOf(canvas);
+        renderer?.setFrame(snap.world, snap.presentation, live.camera.view(), size);
       },
     })
       .then((created) => {
@@ -100,14 +103,23 @@ export function WorldCanvas({ session, selectedId, onSelect, rendererRef }: Worl
     const canvas = canvasRef.current;
     if (canvas === null) return;
     let dragging = false;
-    let moved = false;
+    let dragDx = 0;
+    let dragDy = 0;
     let lastX = 0;
     let lastY = 0;
-    const viewport = (): { width: number; height: number } => viewportOf(canvas);
+    // Cached canvas size: `clientWidth` forces layout, so it is read on
+    // resize/pointer events only — never in the 60Hz tick (the renderer
+    // owns its own cached copy via `resize()`).
+    let cachedViewport = viewportOf(canvas);
+    const viewport = (): { width: number; height: number } => ({ ...cachedViewport });
+    const refreshViewport = (): void => {
+      cachedViewport = viewportOf(canvas);
+    };
 
     const onPointerDown = (event: PointerEvent): void => {
       dragging = true;
-      moved = false;
+      dragDx = 0;
+      dragDy = 0;
       lastX = event.clientX;
       lastY = event.clientY;
       canvas.setPointerCapture(event.pointerId);
@@ -118,13 +130,18 @@ export function WorldCanvas({ session, selectedId, onSelect, rendererRef }: Worl
       const dy = event.clientY - lastY;
       lastX = event.clientX;
       lastY = event.clientY;
-      if (Math.abs(dx) + Math.abs(dy) > 0) moved = true;
-      if (moved) sessionRef.current.panBy(dx, dy, viewport());
+      dragDx += dx;
+      dragDy += dy;
+      // Cumulative 4px threshold: jitter must not kill click selection.
+      if (Math.abs(dragDx) + Math.abs(dragDy) >= 4) {
+        refreshViewport();
+        sessionRef.current.panBy(dx, dy, viewport());
+      }
     };
-    const onPointerUp = (event: PointerEvent): void => {
+    const endDrag = (event: PointerEvent): void => {
       if (!dragging) return;
       dragging = false;
-      if (!moved) {
+      if (Math.abs(dragDx) + Math.abs(dragDy) < 4) {
         const rect = canvas.getBoundingClientRect();
         const picked = rendererRef.current?.pick(
           event.clientX - rect.left,
@@ -133,22 +150,32 @@ export function WorldCanvas({ session, selectedId, onSelect, rendererRef }: Worl
         selectRef.current(picked ?? null);
         rendererRef.current?.setSelected(picked ?? null);
       }
+      dragDx = 0;
+      dragDy = 0;
     };
     const onWheel = (event: WheelEvent): void => {
       event.preventDefault();
+      refreshViewport();
       const rect = canvas.getBoundingClientRect();
       const live = sessionRef.current;
       const zoom = live.camera.zoom * (event.deltaY < 0 ? 1.15 : 1 / 1.15);
       live.zoomAt({ x: event.clientX - rect.left, y: event.clientY - rect.top }, zoom, viewport());
     };
+    const onResize = (): void => refreshViewport();
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(onResize);
+    resizeObserver?.observe(canvas);
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
-    canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('pointerup', endDrag);
+    canvas.addEventListener('pointercancel', endDrag);
     canvas.addEventListener('wheel', onWheel, { passive: false });
     return () => {
+      resizeObserver?.disconnect();
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
-      canvas.removeEventListener('pointerup', onPointerUp);
+      canvas.removeEventListener('pointerup', endDrag);
+      canvas.removeEventListener('pointercancel', endDrag);
       canvas.removeEventListener('wheel', onWheel);
     };
   }, [rendererRef]);

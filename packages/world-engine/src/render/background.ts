@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { ThemeRuntime } from '@thenexus/asset-system';
 import type { Viewport } from '../core/iso';
-import { themeColor } from './theme-colors';
+import { themeColor } from '../core/theme-colors';
 
 /**
  * Screen-space celestial backdrop: deep-space wash, deterministic starfield,

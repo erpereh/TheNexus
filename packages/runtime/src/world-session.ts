@@ -23,13 +23,14 @@ import {
 import {
   Camera,
   findPathToTarget,
+  TICK_MS,
   WorldSim,
   type Cell,
   type GridPoint,
   type Viewport,
   type WorldSnapshot,
-} from '@thenexus/world-engine';
-import type { CharacterPresentation } from '@thenexus/world-engine';
+} from '@thenexus/world-engine/core';
+import type { CharacterPresentation } from '@thenexus/world-engine/core';
 import { buildDemoShip, type DemoShip } from './demo-ship';
 
 /**
@@ -131,6 +132,7 @@ export class WorldSession {
   private scenarioInput: ScenarioInput | null = null;
   private scenarioStartMs = 0;
   private simTimeMs = 0;
+  private timeRemainderMs = 0;
   private spawnCursor = 0;
   private listenerErrors: readonly { error: unknown; eventId: string }[] = [];
 
@@ -169,6 +171,14 @@ export class WorldSession {
     const options: SimulatorScenarioOptions =
       typeof input === 'string' ? createScenarioPreset(input) : input;
     const events = generateScenario(options);
+    // Fail fast on capacity: every agent needs a distinct spawn cell, so an
+    // oversized scenario must surface here, not as listener errors mid-run.
+    const agentIds = new Set(events.map((event) => event.agentId));
+    if (agentIds.size > this.ship.spawnCells.length) {
+      throw new Error(
+        `scenario needs ${agentIds.size} spawn cells but the demo ship has ${this.ship.spawnCells.length}`,
+      );
+    }
     this.queue = [...events].sort((a, b) =>
       a.occurredAt < b.occurredAt
         ? -1
@@ -181,6 +191,7 @@ export class WorldSession {
     const first = this.queue[0];
     this.scenarioStartMs = first !== undefined ? Date.parse(first.occurredAt) : 0;
     this.simTimeMs = 0;
+    this.timeRemainderMs = 0;
     this.sim = new WorldSim(this.ship.grid);
     this.roster = createCrewRoster(this.initialCrew);
     this.agents = new Map();
@@ -223,15 +234,18 @@ export class WorldSession {
   /** Advances scenario time, routes due events, then ticks the world. */
   advance(dtMs: number): void {
     if (!(dtMs > 0) || this.bus === null) return;
-    this.simTimeMs += dtMs;
-    const horizon = this.scenarioStartMs + this.simTimeMs;
-    while (this.queue.length > 0) {
-      const head = this.queue[0] as NormalizedEvent;
-      if (Date.parse(head.occurredAt) > horizon) break;
-      this.queue.shift();
-      this.bus.publish(head);
+    // Session-owned accumulator with tick-quantized event processing: each
+    // 100ms quantum processes its tick window of events and then runs
+    // exactly one sim tick. Any chunking with the same total (10×100ms,
+    // 1×1000ms, 60fps fractions) yields identical quanta and interleaving.
+    // The sim is ticked directly so its own accumulator never diverges.
+    this.timeRemainderMs += dtMs;
+    while (this.timeRemainderMs >= TICK_MS) {
+      this.timeRemainderMs -= TICK_MS;
+      this.simTimeMs += TICK_MS;
+      this.processDue();
+      this.sim.tick();
     }
-    this.sim.advance(dtMs);
     if (this.followWorldId !== null) {
       const followed = this.sim.getCharacter(this.followWorldId);
       if (followed !== undefined) {
@@ -240,20 +254,34 @@ export class WorldSession {
     }
   }
 
-  snapshot(): SessionSnapshot {
+  private processDue(): void {
+    const horizon = this.scenarioStartMs + this.simTimeMs;
+    while (this.queue.length > 0) {
+      const head = this.queue[0] as NormalizedEvent;
+      if (Date.parse(head.occurredAt) > horizon) break;
+      this.queue.shift();
+      const bus = this.bus;
+      if (bus !== null) bus.publish(head);
+    }
+  }
+
+  snapshot(options: { history?: boolean } = {}): SessionSnapshot {
     const world = this.sim.snapshot();
     const waitingById = new Map(world.characters.map((c) => [c.id, c.waiting] as const));
     const presentation = new Map<string, CharacterPresentation>();
     for (const [worldId, info] of this.presentation) {
       presentation.set(worldId, { ...info, waiting: waitingById.get(worldId) ?? info.waiting });
     }
+    // The per-frame render path passes `{ history: false }`: history grows
+    // with every event and must not be cloned at 60Hz.
+    const includeHistory = options.history ?? true;
     return {
       tick: world.tick,
       simTimeMs: this.simTimeMs,
       world,
       presentation,
       traces: new Map(this.traces),
-      history: [...this.history],
+      history: includeHistory ? [...this.history] : [],
       counts: {
         agents: this.agents.size,
         sessions: this.sessions.size,
@@ -263,10 +291,10 @@ export class WorldSession {
     };
   }
 
-  /** Frames the whole ship (overview). */
-  frameShip(): void {
+  /** Frames the whole ship (overview) for the given canvas size. */
+  frameShip(viewport: Viewport = { width: 1280, height: 800 }): void {
     const points: GridPoint[] = this.ship.spawnCells.map((cell) => ({ x: cell.x, y: cell.y }));
-    this.camera.frameCells(points, { width: 1280, height: 800 });
+    this.camera.frameCells(points, viewport);
   }
 
   panBy(dxScreen: number, dyScreen: number, viewport: Viewport): void {
@@ -299,6 +327,7 @@ export class WorldSession {
       id: entry.worldId,
       label: entry.label,
       activity: event.activity,
+      animationIntent: resolution.animationIntent,
       statusDisplay: resolution.statusDisplay,
       effectIntent: resolution.effectIntent,
       waiting: character.waiting,
@@ -339,7 +368,9 @@ export class WorldSession {
     const characterId = result.assignment.characterId;
     const guest = result.guest;
     if (guest !== undefined) {
-      const guestNumber = this.roster.guests.length;
+      // Label from the stable guest id (`guest_0007` -> `Guest 7`) so numbers
+      // are never reused after a guest converts or releases.
+      const guestNumber = Number.parseInt(guest.id.replace(/^guest_0*/, ''), 10);
       return {
         agentId: event.agentId,
         sessionId: event.sessionId,
@@ -347,7 +378,7 @@ export class WorldSession {
         assignmentId: result.assignment.assignmentId,
         characterId: null,
         guestId: guest.id,
-        label: `Guest ${guestNumber}`,
+        label: `Guest ${Number.isNaN(guestNumber) ? guest.id : guestNumber}`,
         isGuest: true,
       };
     }
@@ -402,7 +433,12 @@ export class WorldSession {
         };
       }
     }
-    // No reachable station: hold position (character keeps its last activity).
+    // No reachable station: stop in place (single-cell path) so the
+    // character does not keep walking a stale route. Activity is kept.
+    const holder = this.sim.getCharacter(worldId);
+    if (holder !== undefined && holder.pathIndex < holder.path.length - 1) {
+      this.sim.assignPath(worldId, [{ ...holder.cell }]);
+    }
     return { destination: null, steps: ['no-reachable-station:holding-position'] };
   }
 }

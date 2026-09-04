@@ -3,7 +3,7 @@ import type { RoomType } from '@thenexus/contracts';
 import { depthKeyOf } from '../core/depth-sort';
 import { gridToScreen } from '../core/iso';
 import type { Cell } from '../core/grid';
-import type { ShipLayoutView, ShipRoomView } from './ship-view';
+import type { ShipLayoutView, ShipRoomView } from '../core/ship-view';
 
 /**
  * Static ship-structure graphics: per-cell floor diamonds with subtle
@@ -143,7 +143,7 @@ export function bakeShipStructure(layout: ShipLayoutView): BakedShip {
     bakeRoomTrim(trim, room);
   }
   floors.zIndex = -1;
-  trim.zIndex = -1;
+  trim.zIndex = 0;
   container.addChild(floors);
   container.addChild(trim);
 

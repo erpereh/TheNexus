@@ -236,6 +236,31 @@ describe('WorldSession deterministic pipeline', () => {
     expect(session.activeSubscriptions).toBe(0);
   });
 
+  it('reaches identical states regardless of advance chunking', () => {
+    const run = (chunks: number[]): string => {
+      const session = new WorldSession({ roster: roster(12) });
+      session.start('nested-subagents');
+      for (const dt of chunks) session.advance(dt);
+      const snap = session.snapshot();
+      session.dispose();
+      return JSON.stringify({
+        tick: snap.tick,
+        simTimeMs: snap.simTimeMs,
+        cells: snap.world.characters.map((c) => [c.id, c.cell, c.facing, c.moving, c.waiting]),
+        presentation: [...snap.presentation.values()].map((p) => [
+          p.id,
+          p.label,
+          p.activity,
+          p.waiting,
+        ]),
+        history: snap.history.map((t) => [t.eventId, t.destinationStationId]),
+      });
+    };
+    const fine = run(Array.from({ length: 150 }, () => 100));
+    const coarse = run(Array.from({ length: 15 }, () => 1000));
+    expect(coarse).toBe(fine);
+  });
+
   it('supports the 100-agent scale preset end to end', () => {
     const session = new WorldSession({ roster: roster(120) });
     session.start('agents-100');

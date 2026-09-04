@@ -7,7 +7,7 @@ import type { ThemeManifest } from '@thenexus/contracts';
 import { createThemeRuntime, type ThemeRuntime } from '@thenexus/asset-system';
 import { DEFAULT_THEME } from '@thenexus/asset-system';
 import { AnimationStateMachine } from '../core/animation-state';
-import { slotForActivity } from '../core/activity-map';
+import { resolveSlotForIntent, slotForActivity } from '../core/activity-map';
 import { gridToScreen, screenToWorld, type CameraView, type Viewport } from '../core/iso';
 import { PerfMonitor } from '../core/perf';
 import type { Cell } from '../core/grid';
@@ -23,7 +23,7 @@ import {
   type CharacterNode,
   type CharacterStatus,
 } from './character-graphics';
-import type { CharacterPresentation, ShipLayoutView } from './ship-view';
+import type { CharacterPresentation, ShipLayoutView } from '../core/ship-view';
 
 /**
  * PixiJS v8 world renderer. Owns the Application lifecycle, ordered layers,
@@ -68,7 +68,9 @@ interface TrackedCharacter {
 function statusFor(activity: CharacterPresentation['activity'], waiting: boolean): CharacterStatus {
   if (activity === 'error') return 'error';
   if (activity === 'completed') return 'completed';
-  if (waiting) return 'waiting';
+  // A waiting-for-user agent shows pause-bars even on a free cell; the sim
+  // `waiting` flag only covers physically blocked movement.
+  if (activity === 'waiting-user' || waiting) return 'waiting';
   return 'active';
 }
 
@@ -140,6 +142,7 @@ export class WorldRenderer {
    * the host through `setSelected`.
    */
   pick(sx: number, sy: number): string | null {
+    this.assertLive();
     if (this.snapshot === null) return null;
     const world = screenToWorld({ x: sx, y: sy }, this.camera, this.viewport);
     let best: string | null = null;
@@ -161,10 +164,12 @@ export class WorldRenderer {
 
   setLayout(layout: ShipLayoutView): void {
     this.assertLive();
-    this.layout = layout;
-    this.layers.world.removeChildren();
+    // Destroy previous layout nodes (baked Graphics hold GPU resources).
+    for (const child of this.layers.world.removeChildren()) child.destroy({ children: true });
+    for (const tracked of this.characters.values()) tracked.node.destroy();
     this.characters.clear();
     this.stations.length = 0;
+    this.layout = layout;
     const baked = bakeShipStructure(layout);
     this.layers.world.addChild(baked.container);
     for (const station of layout.stations) {
@@ -180,13 +185,30 @@ export class WorldRenderer {
     camera: CameraView,
     viewport: Viewport,
   ): void {
+    this.assertLive();
     this.snapshot = snapshot;
     this.presentation = presentation;
     this.camera = { center: { ...camera.center }, zoom: camera.zoom };
     this.viewport = { ...viewport };
   }
 
+  /** Current canvas CSS size (reads layout on demand; not per-frame). */
+  viewportSize(): Viewport {
+    this.assertLive();
+    const canvas = this.app.canvas;
+    return {
+      width: Math.max(1, Math.floor(canvas.clientWidth)),
+      height: Math.max(1, Math.floor(canvas.clientHeight)),
+    };
+  }
+
+  /** Last viewport pushed via `setFrame`/`resize` (layout-free, tick-safe). */
+  frameViewport(): Viewport {
+    return { ...this.viewport };
+  }
+
   setSelected(id: string | null): void {
+    this.assertLive();
     this.selectedId = id;
   }
 
@@ -295,8 +317,12 @@ export class WorldRenderer {
 
       const info = this.presentation.get(character.id);
       const activity = info?.activity ?? 'idle';
-      const slot = slotForActivity(activity);
+      // The mapping animation intent wins; the activity slot is the fallback
+      // so trace and visuals cannot silently diverge.
+      const slot = resolveSlotForIntent(info?.animationIntent ?? slotForActivity(activity));
       const status = statusFor(activity, info?.waiting ?? character.waiting);
+      // `hidden` characters play their motion but show no status ornament.
+      const shownStatus = info?.statusDisplay === 'hidden' ? 'active' : status;
       tracked.machine.setFacing(character.facing);
       tracked.machine.setMoving(character.moving);
       tracked.machine.setIntent(slot);
@@ -305,7 +331,7 @@ export class WorldRenderer {
         {
           slot: frame.slot,
           mirrored: frame.mirrored,
-          status,
+          status: shownStatus,
           moving: character.moving,
           selected: this.selectedId === character.id,
           accent: tracked.accent,

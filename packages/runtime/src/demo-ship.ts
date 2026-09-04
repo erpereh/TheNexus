@@ -1,9 +1,9 @@
 import type { RoomType, StationType, ThemeManifest } from '@thenexus/contracts';
 import { createThemeRuntime, DEFAULT_THEME } from '@thenexus/asset-system';
 import type { MappingShipLayout } from '@thenexus/mapping';
-import { roomPalette, stationPalette, TileGrid } from '@thenexus/world-engine';
-import type { Cell, GridRect } from '@thenexus/world-engine';
-import type { ShipLayoutView, ShipRoomView, ShipStationView } from '@thenexus/world-engine';
+import { roomPalette, stationPalette, TileGrid } from '@thenexus/world-engine/core';
+import type { Cell, GridRect } from '@thenexus/world-engine/core';
+import type { ShipLayoutView, ShipRoomView, ShipStationView } from '@thenexus/world-engine/core';
 
 /**
  * Deterministic demo ship: 8 semantic rooms (one per `DEFAULT_MAPPING_RULES`

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_MAPPING_RULES } from '@thenexus/mapping';
-import { approachCells, findPathToTarget } from '@thenexus/world-engine';
+import { approachCells, findPathToTarget } from '@thenexus/world-engine/core';
 import { buildDemoShip } from './demo-ship';
 
 describe('demo ship static guarantees', () => {

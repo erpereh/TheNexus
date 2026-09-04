@@ -1,6 +1,6 @@
 import type { RoomType, SemanticActivity, StationType } from '@thenexus/contracts';
-import type { GridRect } from '../core/grid';
-import type { Cell } from '../core/grid';
+import type { GridRect } from './grid';
+import type { Cell } from './grid';
 
 /**
  * Renderer input views (pixi-free). Produced by `@thenexus/runtime` from the
@@ -50,6 +50,12 @@ export interface CharacterPresentation {
   /** Short HUD label (crew display name or guest tag). */
   label: string;
   activity: SemanticActivity;
+  /**
+   * Free-form mapping animation intent (resolves via `resolveSlotForIntent`;
+   * falls back to the activity slot). Kept alongside `activity` so the
+   * debugger trace and the played animation can never silently diverge.
+   */
+  animationIntent: string;
   /** Mapping status visibility for this character. */
   statusDisplay: 'always' | 'overview' | 'hidden';
   effectIntent: string | null;

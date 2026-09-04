@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CrewCharacter, SemanticActivity } from '@thenexus/contracts';
 import { WorldSession, type ScenarioPresetName } from '@thenexus/runtime';
-import type { WorldRenderer } from '@thenexus/world-engine';
+import type { WorldRenderer } from '@thenexus/world-engine/render';
 import { useT } from '../app/I18nProvider';
 import { WorldCanvas } from './WorldCanvas';
 
@@ -92,11 +92,14 @@ function statusSymbol(activity: SemanticActivity, waiting: boolean): string {
  * follow), the character roster, the selected-agent mapping trace and dev
  * performance metrics. All world state is polled at 2Hz — never at frame
  * rate — while the canvas renders smoothly underneath.
+ *
+ * Accepts an optional prebuilt session (test seam); otherwise creates the
+ * standard 12-member demo crew.
  */
-export function WorldPanel() {
+export function WorldPanel({ session: sessionProp }: { session?: WorldSession }) {
   const t = useT();
   const [session] = useState(
-    () => new WorldSession({ roster: CREW_NAMES.map((_, i) => devCrewMember(i)) }),
+    () => sessionProp ?? new WorldSession({ roster: CREW_NAMES.map((_, i) => devCrewMember(i)) }),
   );
   const [preset, setPreset] = useState<ScenarioPresetName>('nested-subagents');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -194,30 +197,42 @@ export function WorldPanel() {
             </button>
           </div>
           <div>
-            <button type="button" data-testid="world-overview" onClick={() => session.frameShip()}>
+            <button
+              type="button"
+              data-testid="world-overview"
+              onClick={() => {
+                const size = rendererRef.current?.viewportSize();
+                if (size !== undefined) session.frameShip(size);
+                else session.frameShip();
+              }}
+            >
               {t('world.overview')}
             </button>
             <button
               type="button"
               data-testid="world-zoom-in"
-              onClick={() =>
-                session.zoomAt({ x: 640, y: 400 }, session.camera.zoom * 1.25, {
-                  width: 1280,
-                  height: 800,
-                })
-              }
+              onClick={() => {
+                const size = rendererRef.current?.viewportSize() ?? { width: 1280, height: 800 };
+                session.zoomAt(
+                  { x: size.width / 2, y: size.height / 2 },
+                  session.camera.zoom * 1.25,
+                  size,
+                );
+              }}
             >
               {t('world.zoomIn')}
             </button>
             <button
               type="button"
               data-testid="world-zoom-out"
-              onClick={() =>
-                session.zoomAt({ x: 640, y: 400 }, session.camera.zoom / 1.25, {
-                  width: 1280,
-                  height: 800,
-                })
-              }
+              onClick={() => {
+                const size = rendererRef.current?.viewportSize() ?? { width: 1280, height: 800 };
+                session.zoomAt(
+                  { x: size.width / 2, y: size.height / 2 },
+                  session.camera.zoom / 1.25,
+                  size,
+                );
+              }}
             >
               {t('world.zoomOut')}
             </button>

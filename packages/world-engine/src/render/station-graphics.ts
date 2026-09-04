@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { depthKeyOf } from '../core/depth-sort';
 import { gridToScreen } from '../core/iso';
-import type { ShipStationView } from './ship-view';
+import type { ShipStationView } from '../core/ship-view';
 
 /**
  * Procedural station furniture: a dais platform plus a per-type console
