@@ -328,3 +328,12 @@ Verification:
 - Note: animation-state step-3 same-slot fallback deviates from the Phase 4 plan formula; pinned by tests and documented in code — reviewed deviation, not regression.
 - Post-fix gates: format/lint/typecheck/test all PASS (379 tests).
 Open concerns: final fresh tauri build + cargo check after these fixes, then close-out docs.
+
+### Final verification (post-review-fix build)
+Verification:
+- `pnpm format:check` -> PASS exit 0; `pnpm lint` -> PASS exit 0; `pnpm typecheck` -> PASS exit 0; `pnpm test` -> PASS exit 0, **379 tests** (i18n 6, contracts 70, asset-system 8, mapping 9, bridge 10, persistence 68, replay-engine 12, simulator 30, world-engine 78, adapters 52, crew-simulation 10, runtime 18, desktop 8).
+- `cargo check --all-targets` -> PASS exit 0.
+- `pnpm --filter @thenexus/desktop tauri build` -> PASS exit 0 (exe + MSI + NSIS) with all review fixes included.
+- Final release build re-verified live (start + 8 agents + 60 FPS + routing intact after review changes); test app removed afterwards.
+- Acceptance checklist reconciled from fresh evidence (E/F/G/O/P/Q rows); README layout + status refreshed; handoff successor section written.
+Open concerns: none — milestone complete.

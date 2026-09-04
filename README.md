@@ -8,7 +8,7 @@ The product is being designed as a potentially public/commercial application fro
 
 ## Current status
 
-Implementation has started on the `agent/glm-autonomous-v1` branch following the canonical design specification and the phased roadmap. The bootstrap foundation (pnpm/Tauri/React workspace, provider-neutral contracts, deterministic Harness Simulator, local event bus and a simulator-to-UI vertical slice) is in place; see `docs/execution/progress.md` and `docs/execution/acceptance-checklist.md` for verified status.
+Implementation has started on the `agent/glm-autonomous-v1` branch following the canonical design specification and the phased roadmap. The foundation (workspace, contracts, simulator, bridge, persistence, replay, adapters, i18n) plus the first visual vertical slice (PixiJS world renderer, deterministic demo ship, simulator-driven world session, desktop world surface) are in place; see `docs/execution/progress.md` and `docs/execution/acceptance-checklist.md` for verified status.
 
 ## Documentation
 
@@ -40,11 +40,21 @@ Agent operating rules are defined in:
 ## Repository layout
 
 ```text
-apps/desktop          Tauri 2 + React + TypeScript desktop shell
-packages/contracts    Provider-neutral schemas/types (events, capabilities)
-packages/simulator    Deterministic Harness Simulator scenarios
-packages/bridge       Normalized in-process event bus
-docs/                 Canonical design, architecture and execution docs
+apps/desktop               Tauri 2 + React + TypeScript desktop shell
+packages/contracts         Provider-neutral schemas/types (events, capabilities)
+packages/simulator         Deterministic Harness Simulator scenarios
+packages/bridge            Normalized in-process event bus
+packages/world-engine      Isometric core (core/) + PixiJS renderer (render/)
+packages/mapping           Semantic activity -> room/station mapping engine
+packages/crew-simulation   Persistent crew assignment + Guest fallback
+packages/runtime           Demo ship + deterministic world-session orchestrator
+packages/asset-system      Theme runtime + default space-fantasy theme
+packages/replay-engine     Deterministic record/replay projection
+packages/persistence       SQLite storage, migrations, redaction
+packages/adapter-sdk       Passive-first adapter contracts + conformance suite
+packages/adapter-*         Generic/ZCode/OpenCode/Codex/Cursor fixture adapters
+packages/i18n              English + Spanish catalogs
+docs/                      Canonical design, architecture and execution docs
 ```
 
 ## Requirements

@@ -38,7 +38,7 @@ This checklist is the progress contract for long-running autonomous implementati
 - [x] Scenarios for 10, 50, 100 and 250 synthetic agents exist.
 - [x] Local Bridge accepts provider-neutral adapter events and publishes normalized events.
 - [x] Backpressure/high-volume behavior is tested.
-- [ ] Simulator is the default onboarding/demo data source.
+- [x] Simulator is the default onboarding/demo data source.
 
 ## D. Persistence, privacy and replay
 
@@ -55,36 +55,36 @@ This checklist is the progress contract for long-running autonomous implementati
 
 ## E. PixiJS World Engine
 
-- [ ] Fixed-perspective 2.5D isometric renderer is functional.
+- [x] Fixed-perspective 2.5D isometric renderer is functional.
 - [ ] Camera supports pan, smooth zoom, follow and overview framing.
-- [ ] Depth sorting is stable for characters, rooms, stations and props.
-- [ ] Navigation/pathfinding avoids blocked cells and unreachable stations.
-- [ ] Characters can move between rooms and stations without clipping through blocked geometry.
-- [ ] Animation state machine supports required baseline activities.
-- [ ] World engine does not depend directly on ZCode/OpenCode/Codex/Cursor APIs.
+- [x] Depth sorting is stable for characters, rooms, stations and props.
+- [x] Navigation/pathfinding avoids blocked cells and unreachable stations.
+- [x] Characters can move between rooms and stations without clipping through blocked geometry.
+- [x] Animation state machine supports required baseline activities.
+- [x] World engine does not depend directly on ZCode/OpenCode/Codex/Cursor APIs.
 - [ ] Hidden/minimized desktop window stops unnecessary world rendering.
-- [ ] Normal-sized scenes target stable 60 FPS on the development Windows machine.
-- [ ] 100-agent stress scenario remains usable and records performance metrics.
-- [ ] 250-agent extreme scenario completes without crash/leak runaway.
+- [x] Normal-sized scenes target stable 60 FPS on the development Windows machine.
+- [x] 100-agent stress scenario remains usable and records performance metrics.
+- [x] 250-agent extreme scenario completes without crash/leak runaway.
 
 ## F. Mapping system
 
-- [ ] Default semantic mappings ship with the application.
-- [ ] Mapping resolution supports priorities and fallbacks.
-- [ ] Missing preferred room/station never breaks an assignment.
+- [x] Default semantic mappings ship with the application.
+- [x] Mapping resolution supports priorities and fallbacks.
+- [x] Missing preferred room/station never breaks an assignment.
 - [ ] Mapping editor can create/update/reorder/disable rules.
-- [ ] Mapping Debugger shows incoming event -> normalized event -> activity -> rule -> room -> station -> animation.
-- [ ] Mapping tests are deterministic and provider-neutral.
+- [x] Mapping Debugger shows incoming event -> normalized event -> activity -> rule -> room -> station -> animation.
+- [x] Mapping tests are deterministic and provider-neutral.
 
 ## G. Crew and personality
 
-- [ ] Persistent crew members are independent from provider/model/session identity.
-- [ ] Manual assignment works.
-- [ ] Automatic assignment uses availability/project/specialty/preferences.
-- [ ] Guest Agent fallback works when no crew member is available.
-- [ ] Personality affects only visual/idle behavior.
-- [ ] Personality cannot delay, cancel or modify real/simulated task execution.
-- [ ] Light affinity/social metadata and deterministic ambient interactions work without LLM calls.
+- [x] Persistent crew members are independent from provider/model/session identity.
+- [x] Manual assignment works.
+- [x] Automatic assignment uses availability/project/specialty/preferences.
+- [x] Guest Agent fallback works when no crew member is available.
+- [x] Personality affects only visual/idle behavior.
+- [x] Personality cannot delay, cancel or modify real/simulated task execution.
+- [x] Light affinity/social metadata and deterministic ambient interactions work without LLM calls.
 - [ ] Cosmetic/statistical progression is persisted.
 
 ## H. The Nexus and onboarding
@@ -167,32 +167,32 @@ This checklist is the progress contract for long-running autonomous implementati
 
 ## O. Quality gates
 
-- [ ] `pnpm lint` passes.
-- [ ] `pnpm typecheck` passes.
-- [ ] `pnpm test` passes.
-- [ ] Rust/Tauri tests/checks pass.
-- [ ] Desktop production build completes successfully.
-- [ ] Unit coverage includes contracts, mapping, simulator, assignments and persistence logic.
+- [x] `pnpm lint` passes.
+- [x] `pnpm typecheck` passes.
+- [x] `pnpm test` passes.
+- [x] Rust/Tauri tests/checks pass.
+- [x] Desktop production build completes successfully.
+- [x] Unit coverage includes contracts, mapping, simulator, assignments and persistence logic.
 - [ ] Integration tests cover simulator -> bridge -> persistence -> world-state flow.
 - [ ] E2E tests cover onboarding and core simulator workflow.
 - [ ] Visual regression/screenshot coverage exists for core world/UI states.
 - [ ] Keyboard navigation/accessibility audit has no unresolved critical blocker in professional UI surfaces.
 - [ ] No uncaught error or console-error spam occurs in primary flows.
-- [ ] Fuzz/property tests cover parsers/import formats/high-volume event handling where appropriate.
-- [ ] Memory/performance profiling has been run against stress scenarios and findings recorded.
+- [x] Fuzz/property tests cover parsers/import formats/high-volume event handling where appropriate.
+- [x] Memory/performance profiling has been run against stress scenarios and findings recorded.
 
 ## P. Windows release artifacts
 
-- [ ] Windows installer build is generated successfully.
+- [x] Windows installer build is generated successfully.
 - [ ] Portable Windows build is generated successfully.
 - [ ] GitHub Actions/release workflow is prepared without auto-publishing unexpectedly.
 - [ ] Application branding is configurable; `TheNexus`/`Agent World` remains codename-safe.
-- [ ] Public build excludes unlicensed development-only character packs.
+- [x] Public build excludes unlicensed development-only character packs.
 - [ ] Clean-machine installation/run instructions are documented.
 
 ## Q. Documentation and final review
 
-- [ ] README contains current setup/run/test/build instructions.
+- [x] README contains current setup/run/test/build instructions.
 - [ ] Architecture docs reflect implemented package boundaries and event flow.
 - [ ] Adapter SDK documentation matches actual interfaces.
 - [ ] Character Pack/theme/blueprint authoring docs exist.
